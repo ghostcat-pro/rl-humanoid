@@ -1,4 +1,6 @@
-﻿defaults:
+﻿# Add _self_ to silence the warning and fix composition order
+defaults:
+  - _self_
   - env: humanoid
   - algo: ppo
   - training: default
@@ -6,8 +8,10 @@
 exp_name: "rl-humanoid"
 seed: 42
 
+# Let’s not rely on PowerShell-parsed interpolation here anymore
+# (we’ll read the run dir directly from Hydra at runtime in train.py)
 paths:
-  log_root: \
+  log_root: null
 
 vecnorm:
   enabled: true

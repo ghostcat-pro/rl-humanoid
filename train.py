@@ -9,6 +9,15 @@ from stable_baselines3.common.logger import configure
 from utils.make_env import make_vector_env
 from utils.callbacks import CheckpointAndVecNormCallback
 
+from hydra.core.hydra_config import HydraConfig
+
+from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.vec_env import DummyVecEnv
+
+from utils.make_env import make_single_env
+
+
+
 
 @hydra.main(config_path="conf", config_name="main", version_base=None)
 def main(cfg: DictConfig):
@@ -44,8 +53,37 @@ def main(cfg: DictConfig):
     )
 
     # Configure logger (Hydra gives each run a unique output dir)
-    run_dir = cfg.paths.log_root
+    #run_dir = cfg.paths.log_root
+    run_dir = HydraConfig.get().runtime.output_dir
     logger = configure(run_dir, ["stdout", "tensorboard", "csv"])
+
+    # === Evaluation environment and callback (save best model) ===
+    eval_env = DummyVecEnv([make_single_env(cfg.env.name, {"render_mode": None}, monitor=False, seed=cfg.seed + 10)])
+
+    # If training uses VecNormalize, mirror its stats into the eval env (no updates during eval)
+    if vecnorm_kwargs:
+        from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
+        eval_env = VecNormalize(eval_env, **vecnorm_kwargs)
+        # Copy running stats from training env if available
+        if hasattr(venv, "obs_rms"):
+            eval_env.obs_rms = venv.obs_rms
+        if hasattr(venv, "ret_rms"):
+            eval_env.ret_rms = venv.ret_rms
+        eval_env.training = False
+        eval_env.norm_reward = False
+
+    eval_dir = os.path.join(run_dir, "eval")
+    os.makedirs(eval_dir, exist_ok=True)
+
+    eval_cb = EvalCallback(
+        eval_env,
+        best_model_save_path=eval_dir,
+        log_path=eval_dir,
+        eval_freq=int(cfg.training.checkpoint_every_steps // 2),  # evaluate twice per checkpoint
+        deterministic=True,
+        render=False,
+        n_eval_episodes=5,
+    )
 
     # Validate batch size divisibility
     hp = cfg.algo.hyperparams
@@ -83,11 +121,19 @@ def main(cfg: DictConfig):
     )
 
     # Train the agent
+    '''''
     model.learn(
         total_timesteps=int(cfg.training.total_timesteps),
         callback=ckpt_cb,
         log_interval=cfg.training.log_interval,
     )
+    '''
+    model.learn(
+    total_timesteps=int(cfg.training.total_timesteps),
+    callback=[ckpt_cb, eval_cb],
+    log_interval=cfg.training.log_interval,
+    )
+
 
     # Final saves
     model.save(os.path.join(run_dir, "final_model.zip"))

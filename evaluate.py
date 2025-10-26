@@ -36,17 +36,19 @@ def main():
     # Load the trained policy
     model = PPO.load(args.model_path)
 
-    for ep in range(args.episodes):
-        obs = venv.reset()
-        done = False
-        ep_rew = 0.0
-        while not done:
-            action, _ = model.predict(obs, deterministic=args.deterministic)
-            obs, rewards, dones, infos = venv.step(action)
-            # VecEnv returns arrays; with 1 env, index at [0]
-            ep_rew += float(rewards[0])
-            done = bool(dones[0])
-        print(f"Episode {ep+1}: reward={ep_rew:.2f}")
+    try:
+        for ep in range(args.episodes):
+            obs = venv.reset()
+            done = False
+            ep_rew = 0.0
+            while not done:
+                action, _ = model.predict(obs, deterministic=args.deterministic)
+                obs, rewards, dones, infos = venv.step(action)
+                ep_rew += float(rewards[0])
+                done = bool(dones[0])
+            print(f"Episode {ep+1}: reward={ep_rew:.2f}")
+    finally:
+        venv.close()   # <— ensures viewer and GLFW clean up
 
 
 if __name__ == "__main__":

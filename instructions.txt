@@ -1,0 +1,17 @@
+# how to see the results
+
+.\run_2d.ps1          # latest checkpoint (recommended)
+.\run_2d.ps1 -UseFinalModel
+.\run_2d.ps1 -EnvId Humanoid-v5 -UseFinalModel
+
+# to follow in browser
+
+PS C:\02_DARK\MESTRADO\09_TASI\rl-humanoid> .venv\Scripts\activate
+(.venv) PS C:\02_DARK\MESTRADO\09_TASI\rl-humanoid>
+(.venv) PS C:\02_DARK\MESTRADO\09_TASI\rl-humanoid>
+(.venv) PS C:\02_DARK\MESTRADO\09_TASI\rl-humanoid> tensorboard --logdir outputs
+
+
+# browser linç
+
+http://localhost:6006/#timeseries
