@@ -1,0 +1,3 @@
+﻿total_timesteps: 5_000_000
+log_interval: 10
+checkpoint_every_steps: 500_000

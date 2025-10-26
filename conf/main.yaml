@@ -1,0 +1,16 @@
+﻿defaults:
+  - env: humanoid
+  - algo: ppo
+  - training: default
+
+exp_name: "rl-humanoid"
+seed: 42
+
+paths:
+  log_root: \
+
+vecnorm:
+  enabled: true
+  clip_obs: 10.0
+  gamma: 0.99
+  epsilon: 1e-8

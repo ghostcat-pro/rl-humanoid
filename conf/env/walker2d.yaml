@@ -1,0 +1,7 @@
+﻿name: Walker2d-v5
+make_kwargs:
+  render_mode: null
+vec_env:
+  n_envs: 8
+  start_method: spawn
+  monitor: true
