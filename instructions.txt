@@ -12,6 +12,19 @@ PS C:\02_DARK\MESTRADO\09_TASI\rl-humanoid> .venv\Scripts\activate
 (.venv) PS C:\02_DARK\MESTRADO\09_TASI\rl-humanoid> tensorboard --logdir outputs
 
 
-# browser linç
+# browser link
 
 http://localhost:6006/#timeseries
+
+# execute the trainning
+
+python train.py env=walker2d `
+>>   training.total_timesteps=5_000_000 `
+>>   env.vec_env.n_envs=16 `
+>>   algo.hyperparams.n_steps=1024 `
+>>   algo.hyperparams.learning_rate=2.5e-4 `
+>>   algo.hyperparams.ent_coef=0.005
+
+# activate the environment
+
+ .venv\Scripts\activate  
