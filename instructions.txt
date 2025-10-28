@@ -39,11 +39,48 @@ python train.py env=walker2d `
 .\run_2d.ps1 -Best -EnvId Humanoid-v5
 
 
-# train the agent using SD3
+# train the agent using SD3 in windows
 
-python train.py env=humanoid ` 
->>   training.total_timesteps=8_000_000 `                                                                                            
->>   env.vec_env.n_envs=16 `
->>   algo.hyperparams.n_steps=1024 `
->>   algo.hyperparams.learning_rate=2.0e-4 `
->>   algo.hyperparams.ent_coef=0.01
+python train.py env=humanoid `
+  training.total_timesteps=10_000_000 `
+  env.vec_env.n_envs=16 `
+  algo.hyperparams.n_steps=1024 `
+  algo.hyperparams.learning_rate=2.5e-4 `
+  algo.hyperparams.ent_coef=0.005
+
+
+
+# train the agent using SD3 in ubuntu
+
+  python train.py \
+  env=humanoid \
+  training.total_timesteps=10000000 \
+  env.vec_env.n_envs=16 \
+  algo.hyperparams.n_steps=1024 \
+  algo.hyperparams.learning_rate=2.5e-4 \
+  algo.hyperparams.ent_coef=0.005
+
+
+python train.py \
+  env=humanoid \
+  algo.device=cuda \
+  training.total_timesteps=30000000 \
+  env.vec_env.n_envs=16 \
+  algo.hyperparams.n_steps=1024 \
+  algo.hyperparams.learning_rate=2.5e-4 \
+  algo.hyperparams.ent_coef=0.005
+
+
+python train.py \
+  env=humanoid \
+  algo.device=cuda \
+  training.total_timesteps=50000000 \
+  env.vec_env.n_envs=16 \
+  algo.hyperparams.n_steps=1024 \
+  algo.hyperparams.learning_rate=2.5e-4 \
+  algo.hyperparams.ent_coef=0.005
+
+# to run evaluation on ubunto
+
+./run_2d.sh --use-final-model --env-id Humanoid-v5
+

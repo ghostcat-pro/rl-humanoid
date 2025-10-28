@@ -1,4 +1,12 @@
 ﻿policy: MlpPolicy
+
+device: cpu
+
+# if no set the default would be [64,64] size of the hidden layers
+policy_kwargs:
+  net_arch: [256, 256]
+
+
 hyperparams:
   learning_rate: 3.0e-4
   n_steps: 2048
