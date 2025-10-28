@@ -1,0 +1,14 @@
+Training Configuration
+==================================================
+env_id: Walker2d-v5
+total_frames: 16384
+frames_per_batch: 8192
+minibatch: 4096
+n_envs: 8
+epochs: 1
+lr: 0.00025
+ent_coef: 0.01
+max_grad_norm: 0.5
+device: cpu
+logdir: None
+save_freq: 1

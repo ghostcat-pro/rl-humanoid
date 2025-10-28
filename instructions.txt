@@ -28,3 +28,12 @@ python train.py env=walker2d `
 # activate the environment
 
  .venv\Scripts\activate  
+
+
+# avaliacao deterministica
+
+ .\run_2d.ps1 -Best -EnvId Humanoid-v5 -Deterministic
+
+# avaliacao melhor modelo
+
+.\run_2d.ps1 -Best -EnvId Humanoid-v5

@@ -3,12 +3,17 @@ import gymnasium as gym
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv, VecNormalize
 from stable_baselines3.common.monitor import Monitor
 
+#added line
+from utils.reward_wrappers import UprightAndEffortWrapper
+
 def make_single_env(env_id: str, make_kwargs: dict, monitor: bool = True, seed: int | None = None):
     """Factory returning a thunk to create one env instance."""
     def _init():
         env = gym.make(env_id, **(make_kwargs or {}))
         if seed is not None:
             env.reset(seed=seed)
+        #added line
+        env = UprightAndEffortWrapper(env, upright_w=0.05, effort_w=0.001)    
         if monitor:
             env = Monitor(env)
         return env
