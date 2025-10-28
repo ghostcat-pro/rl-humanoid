@@ -37,3 +37,13 @@ python train.py env=walker2d `
 # avaliacao melhor modelo
 
 .\run_2d.ps1 -Best -EnvId Humanoid-v5
+
+
+# train the agent using SD3
+
+python train.py env=humanoid ` 
+>>   training.total_timesteps=8_000_000 `                                                                                            
+>>   env.vec_env.n_envs=16 `
+>>   algo.hyperparams.n_steps=1024 `
+>>   algo.hyperparams.learning_rate=2.0e-4 `
+>>   algo.hyperparams.ent_coef=0.01
