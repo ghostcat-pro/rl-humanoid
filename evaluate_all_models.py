@@ -43,12 +43,20 @@ def find_all_models():
     return sorted(models, key=lambda x: x['timestamp'])
 
 
-def evaluate_model(model_info, env_id="Humanoid-v5", episodes=20):
+def evaluate_model(model_info, env_id=None, episodes=20):
     """Evaluate a single model and return results."""
     print(f"\n{'='*60}")
     print(f"Evaluating: {model_info['run_dir']}")
     print(f"{'='*60}")
-    
+
+    # Auto-detect environment from config if not specified
+    if env_id is None and model_info.get('config'):
+        env_id = model_info['config'].get('env', {}).get('name', 'Humanoid-v5')
+    elif env_id is None:
+        env_id = 'Humanoid-v5'
+
+    print(f"Environment: {env_id}")
+
     cmd = [
         ".venv/bin/python", "evaluate_stats.py",
         "--env_id", env_id,
@@ -121,10 +129,10 @@ def evaluate_model(model_info, env_id="Humanoid-v5", episodes=20):
 
 def generate_report(all_results, output_file="results.txt"):
     """Generate a comprehensive text report."""
-    
+
     with open(output_file, 'w') as f:
         f.write("=" * 80 + "\n")
-        f.write("HUMANOID-V5 MODEL EVALUATION RESULTS\n")
+        f.write("RL HUMANOID MODEL EVALUATION RESULTS\n")
         f.write("=" * 80 + "\n")
         f.write(f"Total Models Evaluated: {len(all_results)}\n")
         f.write(f"Episodes per Model: {all_results[0]['episodes'] if all_results else 'N/A'}\n")

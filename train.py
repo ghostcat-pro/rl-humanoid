@@ -1,5 +1,7 @@
 ﻿from __future__ import annotations
 import os
+import time
+from datetime import timedelta
 import hydra
 from omegaconf import DictConfig, OmegaConf
 from stable_baselines3 import PPO
@@ -15,6 +17,9 @@ from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 from utils.make_env import make_single_env
+
+# Import custom environments to register them
+import envs
 
 
 
@@ -121,6 +126,9 @@ def main(cfg: DictConfig):
     )
 
     # Train the agent
+    print("\n=== Starting Training ===")
+    start_time = time.time()
+
     '''''
     model.learn(
         total_timesteps=int(cfg.training.total_timesteps),
@@ -134,6 +142,9 @@ def main(cfg: DictConfig):
     log_interval=cfg.training.log_interval,
     )
 
+    end_time = time.time()
+    training_duration = end_time - start_time
+
 
     # Final saves
     model.save(os.path.join(run_dir, "final_model.zip"))
@@ -142,7 +153,15 @@ def main(cfg: DictConfig):
     except Exception as e:
         print(f"[WARN] VecNormalize final save failed: {e}")
 
-    print(f"\nRun directory: {run_dir}\n✅ Training complete.\n")
+    # Print timing summary
+    print("\n" + "="*60)
+    print("Training Complete!")
+    print("="*60)
+    print(f"Total training time: {timedelta(seconds=int(training_duration))}")
+    print(f"Total timesteps: {int(cfg.training.total_timesteps):,}")
+    print(f"Timesteps per second: {int(cfg.training.total_timesteps) / training_duration:.2f}")
+    print(f"Run directory: {run_dir}")
+    print("="*60 + "\n")
 
 
 if __name__ == "__main__":
