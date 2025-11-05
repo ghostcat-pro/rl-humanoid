@@ -4,12 +4,17 @@ defaults:
   - env: humanoid
   - algo: ppo
   - training: default
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
 
 exp_name: "rl-humanoid"
 seed: 42
 
-# Let’s not rely on PowerShell-parsed interpolation here anymore
-# (we’ll read the run dir directly from Hydra at runtime in train.py)
+# Hydra output configuration - organizes by environment type
+hydra:
+  run:
+    dir: outputs/${env.name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+
 paths:
   log_root: null
 
