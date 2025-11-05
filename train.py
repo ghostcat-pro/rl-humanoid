@@ -16,12 +16,6 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 
 from utils.make_env import make_single_env
 
-# Register custom environments (if available)
-try:
-    import envs  # noqa: F401
-except ImportError:
-    pass  # Custom environments not available
-
 
 
 
