@@ -6,6 +6,9 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 from utils.make_env import make_single_env
 from utils.vecnorm_io import maybe_load_vecnormalize
 
+# Import custom environments to register them
+import envs
+
 
 def parse_args():
     ap = argparse.ArgumentParser()
