@@ -84,3 +84,6 @@ python train.py \
 
 ./run_2d.sh --use-final-model --env-id Humanoid-v5
 
+
+
+./run_2d.sh --use-final-model --env-id Humanoid-v5 --run outputs/2025-10-28/21-33-51
