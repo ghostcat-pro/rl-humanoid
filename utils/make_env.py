@@ -37,7 +37,10 @@ def make_vector_env(
     ]
 
     vec_cls = SubprocVecEnv if (use_subproc and n_envs > 1) else DummyVecEnv
-    venv = vec_cls(env_fns, start_method=start_method if vec_cls is SubprocVecEnv else None)
+    if vec_cls is SubprocVecEnv:
+        venv = vec_cls(env_fns, start_method=start_method)
+    else:
+        venv = vec_cls(env_fns)
 
     if vecnormalize_kwargs:
         venv = VecNormalize(venv, **vecnormalize_kwargs)

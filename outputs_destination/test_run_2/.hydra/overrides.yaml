@@ -1,0 +1,4 @@
+- training.total_timesteps=2000
+- env.vec_env.n_envs=1
+- algo.hyperparams.batch_size=256
+- algo.hyperparams.n_steps=256

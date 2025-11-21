@@ -70,6 +70,18 @@ class HumanoidStairsEnv(MujocoEnv, utils.EzPickle):
         self._init_position = None
         self._prev_position = None
         self._prev_height = None
+        
+        # Track max step reached
+        self._max_step_reached = 0
+        self._steps_x_bounds = []
+        # Stairs start at x=1.0 (start of first step) and each is 0.6m long
+        # Stair 1 center: 1.3 -> range [1.0, 1.6]
+        # Stair 2 center: 1.9 -> range [1.6, 2.2]
+        # ...
+        for i in range(10):
+            start_x = 1.0 + i * 0.6
+            end_x = start_x + 0.6
+            self._steps_x_bounds.append((start_x, end_x))
 
         # Path to our custom XML file
         xml_file = os.path.join(
@@ -131,6 +143,24 @@ class HumanoidStairsEnv(MujocoEnv, utils.EzPickle):
             )
         )
 
+    def _update_stair_colors(self, current_x):
+        """Update stair colors based on progress."""
+        # Default color: rgba="0.7 0.8 0.7 1" (light green-ish)
+        # Active color: rgba="0.2 0.8 0.2 1" (bright green)
+        
+        for i, (start_x, end_x) in enumerate(self._steps_x_bounds):
+            geom_name = f"stair_{i+1}"
+            try:
+                geom_id = self.model.geom(geom_name).id
+                if start_x <= current_x:
+                    # Passed or on this step - make it bright
+                    self.model.geom_rgba[geom_id] = [0.2, 0.9, 0.2, 1.0]
+                else:
+                    # Not reached - default
+                    self.model.geom_rgba[geom_id] = [0.7, 0.8, 0.7, 1.0]
+            except KeyError:
+                pass
+
     def step(self, action):
         # Store position before step
         prev_xy_position = self.data.qpos[0:2].copy()
@@ -154,27 +184,63 @@ class HumanoidStairsEnv(MujocoEnv, utils.EzPickle):
 
         # Healthy reward for staying upright
         healthy_reward = self.healthy_reward
+        
+        # Upright reward (alignment of torso z-axis with global z-axis)
+        # qpos[3:7] is the quaternion (w, x, y, z) of the root (torso)
+        # We want z-axis of torso to be close to global z.
+        # Actually, let's use the z-component of the torso's z-axis vector.
+        # But simpler: just penalize large deviations in pitch/roll.
+        # Or use the projection of the torso's up vector onto the global z axis.
+        # self.data.ximat[1] gives rotation matrix of body 1 (torso).
+        # ximat is 3x3 flattened? No, ximat is nbody x 9.
+        # Let's stick to a simpler heuristic or use the one from reward_wrappers if available,
+        # but here we are inside the env.
+        # Let's use a simple penalty for non-uprightness if we can easily compute it.
+        # Alternatively, just increase healthy reward if z is high.
+        
+        # Let's add a "Step Reward" for reaching a new step
+        step_reward = 0.0
+        current_step = 0
+        for i, (start_x, end_x) in enumerate(self._steps_x_bounds):
+            if xy_position[0] >= start_x:
+                current_step = i + 1
+        
+        if current_step > self._max_step_reached:
+            step_reward = 10.0 * (current_step - self._max_step_reached)
+            self._max_step_reached = current_step
+            
+        # Stuck penalty
+        stuck_penalty = 0.0
+        if not self.terminated and np.linalg.norm(xy_velocity) < 0.1:
+            stuck_penalty = -0.1
 
         # Control cost
         ctrl_cost = self.control_cost(action)
 
         # Total reward
-        reward = forward_reward + height_reward + healthy_reward - ctrl_cost
+        reward = forward_reward + height_reward + healthy_reward + step_reward + stuck_penalty - ctrl_cost
 
         # Observation and termination
         observation = self._get_obs()
         terminated = self.terminated
+        
+        # Update visualization
+        self._update_stair_colors(xy_position[0])
 
         info = {
             "reward_forward": forward_reward,
             "reward_height": height_reward,
             "reward_survive": healthy_reward,
+            "reward_step": step_reward,
+            "reward_stuck": stuck_penalty,
             "cost_ctrl": ctrl_cost,
             "x_position": xy_position[0],
             "y_position": xy_position[1],
             "z_position": z_position,
             "x_velocity": xy_velocity[0],
             "distance_from_origin": np.linalg.norm(xy_position, ord=2),
+            "current_step": current_step,
+            "max_step_reached": self._max_step_reached,
         }
 
         if self.render_mode == "human":
@@ -199,6 +265,9 @@ class HumanoidStairsEnv(MujocoEnv, utils.EzPickle):
         qpos[2] = 1.4  # z position - standing height
 
         self.set_state(qpos, qvel)
+        
+        self._max_step_reached = 0
+        self._update_stair_colors(0.0)
 
         observation = self._get_obs()
         return observation
