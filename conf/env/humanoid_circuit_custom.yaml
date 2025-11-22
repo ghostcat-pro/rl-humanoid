@@ -1,0 +1,45 @@
+# @package _global_
+
+# Custom circuit - 5 waypoints with waypoint 3 at top of stairs
+# Agent must climb stairs to reach the middle waypoint, then continue
+
+name: HumanoidCircuit-v0
+
+make_kwargs:
+  render_mode: null
+  
+  # Waypoints to visit in order (x, y coordinates)
+  waypoints:
+    - [10.0, 0.0]   # Waypoint 1: 10m forward on flat ground
+    - [18.0, 0.0]   # Waypoint 2: 18m forward (just before stairs)
+    - [26.0, 0.0]   # Waypoint 3: At top of stairs (elevated position)
+    - [35.0, 0.0]   # Waypoint 4: 35m forward (after stairs)
+    - [45.0, 0.0]   # Waypoint 5: Final destination at 45m
+  
+  waypoint_reach_threshold: 1.5  # 1.5m radius to consider waypoint reached
+  
+  # Stairs configuration: One staircase between waypoint 2 and 3
+  # Stairs start at x=20m, with 10 steps of 15cm height and 60cm depth
+  # This means stairs end at x=26m with total height of 1.5m
+  stairs:
+    - [20.0, 10, 0.15, 0.6]  # Starts at 20m, 10 steps, 15cm height, 60cm depth
+  
+  terrain_width: 4.0  # 4m wide corridor
+  
+  # Reward weights (optimized for stair climbing challenge)
+  progress_reward_weight: 100.0   # Strong reward for approaching current waypoint
+  waypoint_bonus: 75.0            # Large bonus for reaching each waypoint
+  height_reward_weight: 3.0       # Higher reward for climbing (important for waypoint 3)
+  forward_reward_weight: 1.0      # General forward movement
+  ctrl_cost_weight: 0.1
+  contact_cost_weight: 5e-7       # Encourage smooth stepping
+  healthy_reward: 5.0
+  
+  # Health constraints
+  terminate_when_unhealthy: true
+  healthy_z_range: [0.8, 3.0]     # Allow higher z for top of stairs
+
+vec_env:
+  n_envs: 8
+  start_method: spawn
+  monitor: true

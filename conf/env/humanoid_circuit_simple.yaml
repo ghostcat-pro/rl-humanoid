@@ -1,0 +1,43 @@
+# @package _global_
+
+# Simple circuit - 4 waypoints with 2 stair sections
+# Good for initial testing
+
+name: HumanoidCircuit-v0
+
+make_kwargs:
+  render_mode: null
+  
+  # Waypoints to visit in order (x, y coordinates)
+  waypoints:
+    - [10.0, 0.0]   # Waypoint 1: 10m forward
+    - [20.0, 0.0]   # Waypoint 2: 20m forward (after first stairs)
+    - [30.0, 0.0]   # Waypoint 3: 30m forward
+    - [40.0, 0.0]   # Waypoint 4: 40m forward (after second stairs)
+  
+  waypoint_reach_threshold: 1.0  # 1m radius to consider waypoint reached
+  
+  # Stairs: (start_x, num_steps, step_height, step_depth)
+  stairs:
+    - [8.0, 5, 0.15, 0.6]   # First stairs: starts at 8m, 5 steps
+    - [28.0, 5, 0.15, 0.6]  # Second stairs: starts at 28m, 5 steps
+  
+  terrain_width: 4.0  # 4m wide corridor
+  
+  # Reward weights
+  progress_reward_weight: 100.0   # High reward for approaching waypoints
+  waypoint_bonus: 50.0            # Large bonus for reaching each waypoint
+  height_reward_weight: 2.0       # Reward for climbing
+  forward_reward_weight: 1.0      # General forward movement
+  ctrl_cost_weight: 0.1
+  contact_cost_weight: 5e-7
+  healthy_reward: 5.0
+  
+  # Health
+  terminate_when_unhealthy: true
+  healthy_z_range: [0.8, 3.0]
+
+vec_env:
+  n_envs: 8
+  start_method: spawn
+  monitor: true

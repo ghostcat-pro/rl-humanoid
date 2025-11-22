@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 import os
+import sys
 import time
 from datetime import timedelta
 import hydra
@@ -7,6 +8,9 @@ from omegaconf import DictConfig, OmegaConf
 from stable_baselines3 import PPO
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.logger import configure
+
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from utils.make_env import make_vector_env
 from utils.callbacks import CheckpointAndVecNormCallback
@@ -24,7 +28,7 @@ import envs
 
 
 
-@hydra.main(config_path="conf", config_name="main", version_base=None)
+@hydra.main(config_path="../../conf", config_name="main", version_base=None)
 def main(cfg: DictConfig):
     """
     Train a PPO agent on a Gymnasium MuJoCo environment using Hydra configs.
@@ -100,23 +104,62 @@ def main(cfg: DictConfig):
         f"Invalid batch_size={batch_size}: must divide n_envs*n_steps={total_samples}"
     )
 
-    # Instantiate PPO
-    model = PPO(
-        policy=cfg.algo.policy,
-        env=venv,
-        learning_rate=hp.learning_rate,
-        n_steps=n_steps,
-        batch_size=batch_size,
-        n_epochs=int(hp.n_epochs),
-        gamma=hp.gamma,
-        gae_lambda=hp.gae_lambda,
-        clip_range=hp.clip_range,
-        ent_coef=hp.ent_coef,
-        vf_coef=hp.vf_coef,
-        max_grad_norm=hp.max_grad_norm,
-        verbose=1,
-    )
-    model.set_logger(logger)
+    # Instantiate or load PPO model
+    resuming = cfg.get("resume_from") and cfg.resume_from
+    if resuming:
+        print(f"\n=== Resuming from checkpoint: {cfg.resume_from} ===")
+        
+        # Load VecNormalize stats if available
+        vecnorm_path = cfg.resume_from.replace("model_", "vecnormalize_").replace(".zip", ".pkl")
+        if os.path.exists(vecnorm_path) and vecnorm_kwargs:
+            print(f"Loading VecNormalize stats from: {vecnorm_path}")
+            from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
+            venv = VecNormalize.load(vecnorm_path, venv)
+            venv.training = True
+            venv.norm_reward = True
+            # Update eval env stats as well
+            if hasattr(venv, "obs_rms"):
+                eval_env.obs_rms = venv.obs_rms
+            if hasattr(venv, "ret_rms"):
+                eval_env.ret_rms = venv.ret_rms
+            print("VecNormalize statistics loaded successfully.")
+        
+        model = PPO.load(
+            cfg.resume_from,
+            env=venv,
+            verbose=1,
+        )
+        # Update logger for resumed model
+        model.set_logger(logger)
+        
+        # Calculate remaining timesteps to reach target
+        current_timesteps = model.num_timesteps
+        target_timesteps = int(cfg.training.total_timesteps)
+        remaining_timesteps = max(0, target_timesteps - current_timesteps)
+        
+        print(f"Current timesteps: {current_timesteps:,}")
+        print(f"Target timesteps: {target_timesteps:,}")
+        print(f"Remaining timesteps: {remaining_timesteps:,}")
+        print("Model loaded successfully. Continuing training...\n")
+    else:
+        # Create new model
+        remaining_timesteps = int(cfg.training.total_timesteps)
+        model = PPO(
+            policy=cfg.algo.policy,
+            env=venv,
+            learning_rate=hp.learning_rate,
+            n_steps=n_steps,
+            batch_size=batch_size,
+            n_epochs=int(hp.n_epochs),
+            gamma=hp.gamma,
+            gae_lambda=hp.gae_lambda,
+            clip_range=hp.clip_range,
+            ent_coef=hp.ent_coef,
+            vf_coef=hp.vf_coef,
+            max_grad_norm=hp.max_grad_norm,
+            verbose=1,
+        )
+        model.set_logger(logger)
 
     # Checkpoint callback (saves model + VecNormalize)
     ckpt_cb = CheckpointAndVecNormCallback(
@@ -127,20 +170,20 @@ def main(cfg: DictConfig):
 
     # Train the agent
     print("\n=== Starting Training ===")
+    if resuming:
+        if remaining_timesteps <= 0:
+            print(f"[INFO] Target of {int(cfg.training.total_timesteps):,} timesteps already reached. Skipping training.")
+        else:
+            print(f"Training for {remaining_timesteps:,} more timesteps to reach target.")
     start_time = time.time()
 
-    '''''
-    model.learn(
-        total_timesteps=int(cfg.training.total_timesteps),
-        callback=ckpt_cb,
-        log_interval=cfg.training.log_interval,
-    )
-    '''
-    model.learn(
-    total_timesteps=int(cfg.training.total_timesteps),
-    callback=[ckpt_cb, eval_cb],
-    log_interval=cfg.training.log_interval,
-    )
+    if remaining_timesteps > 0:
+        model.learn(
+            total_timesteps=remaining_timesteps,
+            callback=[ckpt_cb, eval_cb],
+            log_interval=cfg.training.log_interval,
+            reset_num_timesteps=False,  # Always preserve timestep count
+        )
 
     end_time = time.time()
     training_duration = end_time - start_time

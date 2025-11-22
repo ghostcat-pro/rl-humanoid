@@ -5,8 +5,12 @@ Evaluate a trained model with video recording capability.
 from __future__ import annotations
 import argparse
 import os
+import sys
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
+
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from utils.make_env import make_single_env
 from utils.vecnorm_io import maybe_load_vecnormalize

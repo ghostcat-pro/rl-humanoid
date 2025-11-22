@@ -24,23 +24,24 @@
         <light cutoff="100" diffuse="1 1 1" dir="-0 0 -1.3" directional="true" exponent="1" pos="0 0 1.3" specular=".1 .1 .1"/>
 
         <!-- Stairs configuration: 10 steps, each 0.6m deep, 0.15m high, 2m wide -->
-        <!-- Starting platform (flat area before stairs) -->
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="start_platform" pos="-2 0 0" rgba="0.8 0.9 0.8 1" size="3 2 0.125" type="box"/>
+        <!-- Extended starting platform - 20m of flat terrain before stairs -->
+        <!-- Agent spawns at x=0, stairs begin at x=20 -->
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="start_platform" pos="10 0 0" rgba="0.8 0.9 0.8 1" size="10 2 0.125" type="box"/>
 
-        <!-- Stair steps - continuous with platform, no gaps -->
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_1" pos="1.3 0 0.075" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_2" pos="1.9 0 0.225" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_3" pos="2.5 0 0.375" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_4" pos="3.1 0 0.525" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_5" pos="3.7 0 0.675" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_6" pos="4.3 0 0.825" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_7" pos="4.9 0 0.975" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_8" pos="5.5 0 1.125" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_9" pos="6.1 0 1.275" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_10" pos="6.7 0 1.425" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
+        <!-- Stair steps - start at x=20 -->
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_1" pos="20.3 0 0.075" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_2" pos="20.9 0 0.225" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_3" pos="21.5 0 0.375" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_4" pos="22.1 0 0.525" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_5" pos="22.7 0 0.675" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_6" pos="23.3 0 0.825" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_7" pos="23.9 0 0.975" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_8" pos="24.5 0 1.125" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_9" pos="25.1 0 1.275" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_10" pos="25.7 0 1.425" rgba="0.7 0.8 0.7 1" size="0.3 2 0.075" type="box"/>
 
         <!-- End platform (flat area after stairs) -->
-        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="end_platform" pos="8.5 0 1.5" rgba="0.8 0.9 0.8 1" size="2.5 2 0.125" type="box"/>
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="end_platform" pos="27.5 0 1.5" rgba="0.8 0.9 0.8 1" size="2.5 2 0.125" type="box"/>
         <body name="torso" pos="0 0 1.4">
             <camera name="track" mode="trackcom" pos="0 -4 0" xyaxes="1 0 0 0 0 1"/>
             <joint armature="0" damping="0" limited="false" name="root" pos="0 0 0" stiffness="0" type="free"/>

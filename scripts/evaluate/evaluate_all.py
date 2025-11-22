@@ -11,6 +11,9 @@ import json
 import re
 import yaml
 
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 def find_all_models():
     """Find all final_model.zip files in outputs directory."""
     outputs_dir = Path("outputs")

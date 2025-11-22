@@ -74,22 +74,31 @@ class HumanoidStairsEnv(MujocoEnv, utils.EzPickle):
         # Track max step reached
         self._max_step_reached = 0
         self._steps_x_bounds = []
-        # Stairs start at x=1.0 (start of first step) and each is 0.6m long
-        # Stair 1 center: 1.3 -> range [1.0, 1.6]
-        # Stair 2 center: 1.9 -> range [1.6, 2.2]
+        # Stairs start at x=20.0 (start of first step) and each is 0.6m long
+        # Stair 1 center: 20.3 -> range [20.0, 20.6]
+        # Stair 2 center: 20.9 -> range [20.6, 21.2]
         # ...
         for i in range(10):
-            start_x = 1.0 + i * 0.6
+            start_x = 20.0 + i * 0.6
             end_x = start_x + 0.6
             self._steps_x_bounds.append((start_x, end_x))
 
         # Path to our custom XML file
         xml_file = os.path.join(
-            os.path.dirname(__file__), "assets", "humanoid_stairs.xml"
+            os.path.dirname(__file__), "..", "assets", "humanoid_stairs.xml"
         )
 
+        # Terrain perception: 5x5 grid around agent = 25 height values
+        # Agent is at center of grid for symmetric perception
+        # Original observation: 376 dimensions
+        # + 25 for height grid
+        # = 401 total dimensions
+        self._height_grid_size = 5  # 5x5 grid (agent at center)
+        self._height_sample_distance = 0.3  # 0.3m spacing between samples
+        height_grid_dims = self._height_grid_size * self._height_grid_size
+        
         observation_space = Box(
-            low=-np.inf, high=np.inf, shape=(376,), dtype=np.float64
+            low=-np.inf, high=np.inf, shape=(376 + height_grid_dims,), dtype=np.float64
         )
 
         MujocoEnv.__init__(
@@ -119,6 +128,74 @@ class HumanoidStairsEnv(MujocoEnv, utils.EzPickle):
         terminated = (not self.is_healthy) if self._terminate_when_unhealthy else False
         return terminated
 
+    def _get_terrain_height_at(self, x, y):
+        """
+        Get terrain height at a specific (x, y) position.
+        
+        Returns the expected height based on stair geometry:
+        - Platform (x < 20.0): height = 0
+        - Stairs (20.0 <= x < 26.0): height increases by 0.15m per step
+        - End platform (x >= 26.0): height = 1.5m
+        """
+        if x < 20.0:
+            # Starting platform (20m of flat terrain)
+            return 0.0
+        elif x >= 26.0:
+            # End platform at top of stairs
+            return 1.5
+        else:
+            # On stairs - calculate which step
+            step_index = int((x - 20.0) / 0.6)  # Each step is 0.6m long
+            step_index = min(step_index, 9)  # Max 10 steps (0-9)
+            return step_index * 0.15
+    
+    def _get_height_grid(self):
+        """
+        Sample terrain heights in a grid around the agent.
+        
+        Creates a 5x5 grid centered on the agent's current position,
+        with samples spaced 0.3m apart. This gives the agent local
+        terrain awareness with the agent at the exact center.
+        
+        Grid layout (top view):
+            • • • • •     Grid covers 1.2m x 1.2m
+            • • • • •     Agent (A) is at center
+            • • A • •     25 total sample points
+            • • • • •     0.3m spacing
+            • • • • •
+        
+        Returns:
+            np.ndarray: Flattened array of 25 height values (relative to agent's current height)
+        """
+        current_x = self.data.qpos[0]
+        current_y = self.data.qpos[1]
+        current_z = self.data.qpos[2]
+        
+        heights = []
+        
+        # Create grid: 5x5 centered on agent
+        # Grid spans from -0.6m to +0.6m in both x and y (1.2m total)
+        grid_half_size = (self._height_grid_size - 1) * self._height_sample_distance / 2
+        
+        for i in range(self._height_grid_size):
+            for j in range(self._height_grid_size):
+                # Calculate offset from center
+                dx = -grid_half_size + i * self._height_sample_distance
+                dy = -grid_half_size + j * self._height_sample_distance
+                
+                # Sample position
+                sample_x = current_x + dx
+                sample_y = current_y + dy
+                
+                # Get terrain height at this position
+                terrain_height = self._get_terrain_height_at(sample_x, sample_y)
+                
+                # Store relative height (terrain height - current agent height)
+                relative_height = terrain_height - current_z
+                heights.append(relative_height)
+        
+        return np.array(heights, dtype=np.float64)
+
     def _get_obs(self):
         position = self.data.qpos.flat.copy()
         velocity = self.data.qvel.flat.copy()
@@ -128,6 +205,9 @@ class HumanoidStairsEnv(MujocoEnv, utils.EzPickle):
 
         actuator_forces = self.data.qfrc_actuator.flat.copy()
         external_contact_forces = self.data.cfrc_ext.flat.copy()
+
+        # Get local height grid for terrain perception
+        height_grid = self._get_height_grid()
 
         if self._exclude_current_positions_from_observation:
             position = position[2:]
@@ -140,6 +220,7 @@ class HumanoidStairsEnv(MujocoEnv, utils.EzPickle):
                 com_velocity,
                 actuator_forces,
                 external_contact_forces,
+                height_grid,  # Add terrain perception
             )
         )
 

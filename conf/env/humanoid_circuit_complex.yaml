@@ -1,0 +1,45 @@
+# @package _global_
+
+# Complex circuit - More waypoints, varied terrain
+# Includes turns and multiple stair sections
+
+name: HumanoidCircuit-v0
+
+make_kwargs:
+  render_mode: null
+  
+  # Waypoints with turns
+  waypoints:
+    - [10.0, 0.0]    # Straight
+    - [20.0, 0.0]    # Straight (over stairs)
+    - [30.0, 2.0]    # Turn right
+    - [40.0, 2.0]    # Straight
+    - [50.0, 0.0]    # Turn left (over stairs)
+    - [60.0, 0.0]    # Final waypoint
+  
+  waypoint_reach_threshold: 1.5  # Slightly larger threshold
+  
+  # Multiple stair sections at different locations
+  stairs:
+    - [15.0, 6, 0.15, 0.5]   # First stairs: 6 steps
+    - [35.0, 8, 0.12, 0.6]   # Second stairs: 8 smaller steps
+    - [48.0, 4, 0.20, 0.7]   # Third stairs: 4 taller steps
+  
+  terrain_width: 5.0  # Wider corridor for turns
+  
+  # Reward weights (balanced for complex navigation)
+  progress_reward_weight: 120.0
+  waypoint_bonus: 100.0           # Higher bonus (more waypoints)
+  height_reward_weight: 2.5
+  forward_reward_weight: 0.8      # Lower (not always forward)
+  ctrl_cost_weight: 0.1
+  contact_cost_weight: 5e-7
+  healthy_reward: 5.0
+  
+  terminate_when_unhealthy: true
+  healthy_z_range: [0.8, 3.0]
+
+vec_env:
+  n_envs: 8
+  start_method: spawn
+  monitor: true

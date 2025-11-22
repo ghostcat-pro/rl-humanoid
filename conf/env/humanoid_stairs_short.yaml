@@ -1,0 +1,32 @@
+# Short approach stairs configuration
+# Quick start to stairs for fast iterations
+
+name: HumanoidStairsConfigurable-v0
+
+make_kwargs:
+  render_mode: null
+  
+  # Short flat distance configuration
+  flat_distance_before_stairs: 5.0   # Only 5m before stairs
+  num_steps: 10
+  step_height: 0.15
+  step_depth: 0.6
+  end_platform_length: 5.0
+  stairs_after_top: false
+  end_with_abyss: false
+  
+  # Reward weights
+  forward_reward_weight: 1.25
+  height_reward_weight: 2.0
+  ctrl_cost_weight: 0.1
+  contact_cost_weight: 5e-7
+  healthy_reward: 5.0
+  step_bonus: 10.0
+  
+  terminate_when_unhealthy: true
+  healthy_z_range: [0.8, 3.0]
+
+vec_env:
+  n_envs: 8
+  start_method: spawn
+  monitor: true

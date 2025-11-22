@@ -5,10 +5,17 @@
 # - Adds gradient clipping
 
 import argparse
+import sys
+import os
 import torch
 import torch.nn as nn
 from torch.utils.data import BatchSampler, SubsetRandomSampler
 from tqdm import tqdm
+from datetime import datetime
+from torch.utils.tensorboard import SummaryWriter
+
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from tensordict import TensorDict
 from tensordict.nn import (
@@ -108,9 +115,35 @@ def main():
     p.add_argument("--ent_coef", type=float, default=0.01)  # used inside ClipPPOLoss
     p.add_argument("--max_grad_norm", type=float, default=0.5)
     p.add_argument("--device", type=str, default="cpu")
+    p.add_argument("--logdir", type=str, default=None, help="Base directory for logs (default: outputs_torchrl)")
+    p.add_argument("--save_freq", type=int, default=10, help="Save checkpoint every N batches")
     args = p.parse_args()
 
     device = torch.device(args.device)
+
+    # ----- Create timestamped output directory -----
+    timestamp = datetime.now().strftime("%Y-%m-%d/%H-%M-%S")
+    if args.logdir:
+        base_dir = args.logdir
+    else:
+        base_dir = "outputs_torchrl"
+    
+    log_dir = os.path.join(base_dir, args.env_id, timestamp)
+    checkpoint_dir = os.path.join(log_dir, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    
+    print(f"📁 Logging to: {log_dir}")
+    
+    # Save training configuration
+    config_path = os.path.join(log_dir, "config.txt")
+    with open(config_path, "w") as f:
+        f.write("Training Configuration\n")
+        f.write("=" * 50 + "\n")
+        for arg, value in vars(args).items():
+            f.write(f"{arg}: {value}\n")
+    
+    # Initialize TensorBoard writer
+    tb_writer = SummaryWriter(log_dir=log_dir)
 
     # ----- Probe specs (handles composite observation) -----
     probe = make_env(args.env_id, device=device)
@@ -185,8 +218,10 @@ def main():
 
     progress = tqdm(total=args.total_frames, desc=f"Training {args.env_id}")
     frames_done = 0
+    batch_num = 0
 
     for batch in collector:
+        batch_num += 1
         # batch has batch_size [T, B] or [N]; flatten to [N] for SGD
         batch = batch.to(device)
         if len(batch.batch_size) == 2:
@@ -235,15 +270,61 @@ def main():
 
         frames_done += args.frames_per_batch
         progress.update(args.frames_per_batch)
-        progress.set_postfix({"avg_reward": float(rewards.mean())})
+        
+        # Calculate metrics
+        avg_reward = float(rewards.mean())
+        progress.set_postfix({"avg_reward": avg_reward})
+        
+        # Log to TensorBoard
+        tb_writer.add_scalar("time/total_frames", frames_done, batch_num)
+        tb_writer.add_scalar("rollout/reward_mean_step", avg_reward, batch_num)
+        tb_writer.add_scalar("loss/objective", losses["loss_objective"].item(), batch_num)
+        tb_writer.add_scalar("loss/critic", losses["loss_critic"].item(), batch_num)
+        tb_writer.add_scalar("loss/entropy", losses["loss_entropy"].item(), batch_num)
+        tb_writer.add_scalar("loss/total", loss.item(), batch_num)
+        
+        # Save checkpoint periodically
+        if batch_num % args.save_freq == 0:
+            checkpoint_path = os.path.join(checkpoint_dir, f"checkpoint_batch_{batch_num}.pt")
+            torch.save({
+                'batch_num': batch_num,
+                'frames_done': frames_done,
+                'policy_state_dict': policy.state_dict(),
+                'value_state_dict': value_seq.state_dict(),
+                'optimizer_state_dict': optim.state_dict(),
+                'args': vars(args),
+            }, checkpoint_path)
+            print(f"\n💾 Checkpoint saved: {checkpoint_path}")
 
         if frames_done >= args.total_frames:
             break
 
-    print("✅ Training complete.")
-    torch.save(policy.state_dict(), f"ppo_{args.env_id}_policy.pt")
-    torch.save(value.state_dict(),   f"ppo_{args.env_id}_value.pt")
-    print(f"Models saved for {args.env_id} ✅")
+    progress.close()
+    tb_writer.close()
+    
+    print("\n✅ Training complete.")
+    
+    # Save final models
+    final_policy_path = os.path.join(log_dir, "policy_final.pt")
+    final_value_path = os.path.join(log_dir, "value_final.pt")
+    final_checkpoint_path = os.path.join(log_dir, "checkpoint_final.pt")
+    
+    torch.save(policy.state_dict(), final_policy_path)
+    torch.save(value_seq.state_dict(), final_value_path)
+    torch.save({
+        'batch_num': batch_num,
+        'frames_done': frames_done,
+        'policy_state_dict': policy.state_dict(),
+        'value_state_dict': value_seq.state_dict(),
+        'optimizer_state_dict': optim.state_dict(),
+        'args': vars(args),
+    }, final_checkpoint_path)
+    
+    print(f"📦 Final models saved to: {log_dir}")
+    print(f"   - Policy: {final_policy_path}")
+    print(f"   - Value: {final_value_path}")
+    print(f"   - Checkpoint: {final_checkpoint_path}")
+    print(f"\n📊 View training logs with: tensorboard --logdir {base_dir}")
 
 
 if __name__ == "__main__":

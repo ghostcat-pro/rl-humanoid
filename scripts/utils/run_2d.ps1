@@ -47,7 +47,9 @@ Write-Host "Model:  $mdl" -ForegroundColor Green
 if ($vec) { Write-Host "VecNorm: $vec" -ForegroundColor Green } else { Write-Warning "No VecNormalize file found. Continuing without it." }
 
 # Build args as an array (not a single string!)
-$argsList = @("evaluate.py", "--env_id", $EnvId, "--model_path", $mdl)
+# Use the evaluate script from scripts/evaluate/ directory
+$evaluateScript = Join-Path $PSScriptRoot "..\evaluate\evaluate_sb3.py"
+$argsList = @($evaluateScript, "--env_id", $EnvId, "--model_path", $mdl)
 if ($vec) { $argsList += @("--vecnorm_path", $vec) }
 if ($Render) { $argsList += "--render" }
 if ($Deterministic) { $argsList += "--deterministic" }

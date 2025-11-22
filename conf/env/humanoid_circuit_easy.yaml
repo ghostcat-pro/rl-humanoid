@@ -1,0 +1,40 @@
+# @package _global_
+
+# Easy circuit for curriculum learning
+# 3 waypoints, flat terrain first, one easy stair section
+
+name: HumanoidCircuit-v0
+
+make_kwargs:
+  render_mode: null
+  
+  # Simple waypoint sequence
+  waypoints:
+    - [15.0, 0.0]   # Waypoint 1: flat terrain
+    - [25.0, 0.0]   # Waypoint 2: over easy stairs
+    - [35.0, 0.0]   # Waypoint 3: end
+  
+  waypoint_reach_threshold: 1.5
+  
+  # One easy stair section
+  stairs:
+    - [18.0, 4, 0.10, 0.8]  # Easy stairs: 4 steps, low height, long depth
+  
+  terrain_width: 4.0
+  
+  # Reward weights (encourage exploration)
+  progress_reward_weight: 150.0   # Higher progress reward
+  waypoint_bonus: 75.0
+  height_reward_weight: 3.0       # Encourage climbing
+  forward_reward_weight: 1.5
+  ctrl_cost_weight: 0.05          # Lower cost for exploration
+  contact_cost_weight: 2e-7       # Lower contact penalty
+  healthy_reward: 5.0
+  
+  terminate_when_unhealthy: true
+  healthy_z_range: [0.8, 3.0]
+
+vec_env:
+  n_envs: 8
+  start_method: spawn
+  monitor: true

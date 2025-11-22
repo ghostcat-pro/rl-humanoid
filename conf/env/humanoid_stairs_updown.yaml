@@ -1,0 +1,33 @@
+# Up and down stairs configuration
+# Agent climbs stairs then descends on the other side
+
+name: HumanoidStairsConfigurable-v0
+
+make_kwargs:
+  render_mode: null
+  
+  # Up and down configuration
+  flat_distance_before_stairs: 20.0
+  num_steps: 10                      # 10 steps up
+  step_height: 0.15
+  step_depth: 0.6
+  end_platform_length: 3.0           # Small platform at top
+  stairs_after_top: true             # Stairs continue downward
+  num_steps_down: 8                  # 8 steps down
+  end_with_abyss: false
+  
+  # Reward weights
+  forward_reward_weight: 1.25
+  height_reward_weight: 1.5          # Less emphasis on height (goes back down)
+  ctrl_cost_weight: 0.1
+  contact_cost_weight: 5e-7
+  healthy_reward: 5.0
+  step_bonus: 10.0
+  
+  terminate_when_unhealthy: true
+  healthy_z_range: [0.8, 3.0]
+
+vec_env:
+  n_envs: 8
+  start_method: spawn
+  monitor: true

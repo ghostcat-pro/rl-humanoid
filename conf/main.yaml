@@ -8,8 +8,11 @@ defaults:
 exp_name: "rl-humanoid"
 seed: 42
 
-# Let’s not rely on PowerShell-parsed interpolation here anymore
-# (we’ll read the run dir directly from Hydra at runtime in train.py)
+# Resume from checkpoint (optional)
+resume_from: null  # Path to checkpoint.zip to resume training
+
+# Let's not rely on PowerShell-parsed interpolation here anymore
+# (we'll read the run dir directly from Hydra at runtime in train.py)
 paths:
   log_root: null
 

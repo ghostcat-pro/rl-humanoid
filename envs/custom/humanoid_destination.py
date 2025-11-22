@@ -71,7 +71,7 @@ class HumanoidDestinationEnv(MujocoEnv, utils.EzPickle):
 
         # Path to our custom XML file
         xml_file = os.path.join(
-            os.path.dirname(__file__), "assets", "humanoid_flat.xml"
+            os.path.dirname(__file__), "..", "assets", "humanoid_destination.xml"
         )
 
         # Observation space needs to include target info or relative position

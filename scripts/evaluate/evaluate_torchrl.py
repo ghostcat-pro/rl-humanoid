@@ -2,11 +2,16 @@
 # Evaluate and visualize trained TorchRL PPO policies
 
 import argparse
+import sys
+import os
 import torch
 import torch.nn as nn
-import os
 import glob
 import numpy as np
+
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 from tensordict.nn import (
     TensorDictModule,
     TensorDictSequential,

@@ -1,0 +1,32 @@
+# Easy stairs configuration for early learning
+# Longer, shallower steps to make climbing easier
+
+name: HumanoidStairsConfigurable-v0
+
+make_kwargs:
+  render_mode: null
+  
+  # Easier terrain configuration
+  flat_distance_before_stairs: 20.0  # 20m flat before stairs
+  num_steps: 8                       # Fewer steps
+  step_height: 0.10                  # Lower steps (10cm)
+  step_depth: 0.8                    # Longer steps (80cm)
+  end_platform_length: 5.0           # 5m platform at top
+  stairs_after_top: false
+  end_with_abyss: false
+  
+  # Reward weights (encourage exploration)
+  forward_reward_weight: 1.5
+  height_reward_weight: 3.0         # Higher reward for climbing
+  ctrl_cost_weight: 0.05            # Lower penalty for movement
+  contact_cost_weight: 2e-7         # Lower contact penalty (allow more exploration)
+  healthy_reward: 5.0
+  step_bonus: 15.0                  # Higher bonus per step
+  
+  terminate_when_unhealthy: true
+  healthy_z_range: [0.8, 3.0]
+
+vec_env:
+  n_envs: 8
+  start_method: spawn
+  monitor: true
