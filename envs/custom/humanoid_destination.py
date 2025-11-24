@@ -32,7 +32,7 @@ class HumanoidDestinationEnv(MujocoEnv, utils.EzPickle):
 
     def __init__(
         self,
-        target_position=(5.0, 0.0),
+        target_position=(10.0, 0.0),  # Changed from 5.0 to 10.0 meters
         distance_reward_weight=1.0,
         reach_reward_weight=10.0,
         ctrl_cost_weight=0.1,
@@ -41,6 +41,8 @@ class HumanoidDestinationEnv(MujocoEnv, utils.EzPickle):
         healthy_z_range=(0.8, 2.5),
         reset_noise_scale=1e-2,
         exclude_current_positions_from_observation=True,
+        terminate_at_destination=True,
+        destination_threshold=0.5,
         **kwargs,
     ):
         utils.EzPickle.__init__(
@@ -54,6 +56,8 @@ class HumanoidDestinationEnv(MujocoEnv, utils.EzPickle):
             healthy_z_range,
             reset_noise_scale,
             exclude_current_positions_from_observation,
+            terminate_at_destination,
+            destination_threshold,
             **kwargs,
         )
 
@@ -68,6 +72,8 @@ class HumanoidDestinationEnv(MujocoEnv, utils.EzPickle):
         self._exclude_current_positions_from_observation = (
             exclude_current_positions_from_observation
         )
+        self._terminate_at_destination = terminate_at_destination
+        self._destination_threshold = destination_threshold
 
         # Path to our custom XML file
         xml_file = os.path.join(
@@ -120,6 +126,11 @@ class HumanoidDestinationEnv(MujocoEnv, utils.EzPickle):
     def terminated(self):
         terminated = (not self.is_healthy) if self._terminate_when_unhealthy else False
         return terminated
+    
+    def is_at_destination(self, xy_position):
+        """Check if the agent has reached the destination."""
+        dist = np.linalg.norm(self._target_position - xy_position)
+        return dist < self._destination_threshold
 
     def _get_obs(self):
         position = self.data.qpos.flat.copy()
@@ -171,7 +182,8 @@ class HumanoidDestinationEnv(MujocoEnv, utils.EzPickle):
         
         # 2. Reach reward
         reach_reward = 0.0
-        if dist < 0.5: # Within 0.5 meters
+        reached_destination = self.is_at_destination(xy_position)
+        if reached_destination:
             reach_reward = self._reach_reward_weight
 
         # Healthy reward for staying upright
@@ -187,8 +199,9 @@ class HumanoidDestinationEnv(MujocoEnv, utils.EzPickle):
         observation = self._get_obs()
         terminated = self.terminated
         
-        # Also terminate if reached target? Maybe not, let it stabilize.
-        # But for now let's just keep it running.
+        # Terminate if reached destination (optional, configurable)
+        if self._terminate_at_destination and reached_destination:
+            terminated = True
 
         info = {
             "reward_progress": progress_reward,
@@ -196,6 +209,7 @@ class HumanoidDestinationEnv(MujocoEnv, utils.EzPickle):
             "reward_survive": healthy_reward,
             "cost_ctrl": ctrl_cost,
             "distance_to_target": dist,
+            "reached_destination": reached_destination,
             "x_position": xy_position[0],
             "y_position": xy_position[1],
         }

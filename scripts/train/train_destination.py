@@ -32,8 +32,20 @@ def main(cfg: DictConfig):
     Train a PPO agent on the Humanoid Destination environment.
     """
     # OVERRIDE CONFIG FOR DESTINATION TASK
-    # We do this programmatically to avoid creating a whole new config file structure for now,
-    # but still leveraging the existing hydra setup.
+    # Load destination-specific config if not already loaded
+    if cfg.env.name != "HumanoidDestination-v0":
+        # Merge in the destination config
+        from omegaconf import OmegaConf
+        import os
+        dest_config_path = os.path.join(os.path.dirname(__file__), "../../conf/env/humanoid_destination.yaml")
+        dest_cfg = OmegaConf.load(dest_config_path)
+        # Temporarily disable struct mode to allow merging
+        OmegaConf.set_struct(cfg, False)
+        # Merge destination config into env
+        cfg.env = OmegaConf.merge(cfg.env, dest_cfg)
+        # Re-enable struct mode
+        OmegaConf.set_struct(cfg, True)
+    
     cfg.env.name = "HumanoidDestination-v0"
     
     # Update output directory to be distinct

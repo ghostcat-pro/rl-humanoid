@@ -13,7 +13,7 @@ def make_single_env(env_id: str, make_kwargs: dict, monitor: bool = True, seed: 
         if seed is not None:
             env.reset(seed=seed)
         #added line
-        env = UprightAndEffortWrapper(env, upright_w=0.05, effort_w=0.001)    
+        env = UprightAndEffortWrapper(env, upright_w=0.5, effort_w=0.001)  # Increased upright weight 10×!    
         if monitor:
             env = Monitor(env)
         return env

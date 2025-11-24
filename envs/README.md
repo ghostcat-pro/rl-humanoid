@@ -77,17 +77,22 @@ python train.py env=humanoid training.total_timesteps=10000000
 - **Implementation:** `envs/custom/humanoid_destination.py`
 - **Key Features:**
   - Flat ground (no obstacles)
-  - Default target: (5.0, 0.0)
+  - Default target: (10.0, 0.0) - 10 meters forward
+  - Episode terminates when destination reached (configurable)
   - Must learn goal-directed locomotion
-  - Configurable target position
+  - Configurable target position, threshold, and termination behavior
   
 **Reward Components:**
-- ✅ Distance minimization to target
-- ✅ Large bonus for reaching target (within 0.5m)
+- ✅ Distance minimization to target (progress-based)
+- ✅ Large bonus for reaching target (within 0.5m default)
 - ✅ Survival bonus
 - ❌ Control cost penalty
 
 **Observation:** Standard humanoid observations + relative vector to target (378-dim)
+
+**Termination:** Episode ends when destination reached OR health check fails (both configurable)
+
+**Configuration:** See `docs/DESTINATION_TERMINATION.md` for detailed options
 
 **Training:**
 ```bash

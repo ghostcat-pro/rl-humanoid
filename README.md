@@ -23,7 +23,7 @@ This project includes **7 locomotion environments** with progressive difficulty:
 
 | Environment | Difficulty | Observation Dims | Task |
 |-------------|------------|------------------|------|
-| **HumanoidDestination-v0** | ⭐⭐⭐ Hard | 378 | Navigate to target (5m, 0m) |
+| **HumanoidDestination-v0** | ⭐⭐⭐ Hard | 378 | Navigate to target (10m, 0m) - terminates on success |
 | **HumanoidStairs-v0** | ⭐⭐⭐ Hard | 401 | Climb fixed 10-step staircase with 5×5 height grid |
 | **HumanoidStairsConfigurable-v0** | ⭐⭐⭐⭐ Very Hard | 401 | Configurable stairs (height, depth, count, abyss) |
 | **HumanoidCircuit-v0** | ⭐⭐⭐⭐⭐ Expert | 404 | Navigate waypoints + climb multiple staircases |

@@ -7,7 +7,7 @@ make_kwargs:
   render_mode: null
   
   # Easier terrain configuration
-  flat_distance_before_stairs: 20.0  # 20m flat before stairs
+  flat_distance_before_stairs: 2.0   # 2m flat before stairs
   num_steps: 8                       # Fewer steps
   step_height: 0.10                  # Lower steps (10cm)
   step_depth: 0.8                    # Longer steps (80cm)
@@ -15,16 +15,16 @@ make_kwargs:
   stairs_after_top: false
   end_with_abyss: false
   
-  # Reward weights (encourage exploration)
-  forward_reward_weight: 1.5
-  height_reward_weight: 3.0         # Higher reward for climbing
-  ctrl_cost_weight: 0.05            # Lower penalty for movement
+  # Reward weights (strongly encourage stair climbing)
+  forward_reward_weight: 2.0        # Increased to encourage reaching stairs
+  height_reward_weight: 8.0         # Much higher reward for climbing (was 5.0)
+  ctrl_cost_weight: 0.1             # Penalize erratic actions (was 0.05)
   contact_cost_weight: 2e-7         # Lower contact penalty (allow more exploration)
-  healthy_reward: 5.0
-  step_bonus: 15.0                  # Higher bonus per step
+  healthy_reward: 15.0              # Strong penalty for falls (was 5.0)
+  step_bonus: 30.0                  # Much higher bonus per step (was 25.0)
   
   terminate_when_unhealthy: true
-  healthy_z_range: [0.8, 3.0]
+  healthy_z_range: [1.0, 2.0]        # STRICT! Forces upright posture, prevents knee-walking
 
 vec_env:
   n_envs: 8

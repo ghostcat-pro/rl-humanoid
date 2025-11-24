@@ -2,8 +2,9 @@
 import argparse
 import os
 import sys
+import json
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -24,6 +25,11 @@ def parse_args():
     ap.add_argument("--render", action="store_true")
     ap.add_argument("--deterministic", action="store_true")
     ap.add_argument("--seed", type=int, default=123)
+    ap.add_argument("--env_kwargs", type=str, default=None, 
+                    help="JSON string of environment kwargs, e.g., '{\"flat_distance_before_stairs\": 1.0}'")
+    ap.add_argument("--save_video", action="store_true", help="Save video of episodes")
+    ap.add_argument("--video_folder", type=str, default="videos", help="Folder to save videos")
+    ap.add_argument("--video_length", type=int, default=0, help="Length of recorded video (0 = full episode)")
     return ap.parse_args()
 
 
@@ -31,7 +37,23 @@ def main():
     args = parse_args()
 
     # Rendering is controlled via the env's make_kwargs
-    make_kwargs = {"render_mode": "human"} if args.render else {"render_mode": None}
+    # For video recording, use rgb_array mode; for visual rendering, use human mode
+    if args.save_video:
+        make_kwargs = {"render_mode": "rgb_array"}
+    elif args.render:
+        make_kwargs = {"render_mode": "human"}
+    else:
+        make_kwargs = {"render_mode": None}
+    
+    # Add any additional env_kwargs from command line
+    if args.env_kwargs:
+        try:
+            extra_kwargs = json.loads(args.env_kwargs)
+            make_kwargs.update(extra_kwargs)
+            print(f"Using environment kwargs: {make_kwargs}")
+        except json.JSONDecodeError as e:
+            print(f"Error parsing env_kwargs: {e}")
+            sys.exit(1)
 
     # Single-env VecEnv for evaluation
     env_fn = make_single_env(args.env_id, make_kwargs, monitor=False, seed=args.seed)
@@ -40,6 +62,18 @@ def main():
     # Optionally load VecNormalize stats (eval mode, no reward norm)
     if args.vecnorm_path:
         venv = maybe_load_vecnormalize(venv, args.vecnorm_path)
+    
+    # Wrap with video recorder if requested
+    if args.save_video:
+        os.makedirs(args.video_folder, exist_ok=True)
+        venv = VecVideoRecorder(
+            venv, 
+            args.video_folder,
+            record_video_trigger=lambda x: x == 0,  # Record first episode of each recording session
+            video_length=args.video_length if args.video_length > 0 else 100000,  # Very long to capture full episode
+            name_prefix="eval"
+        )
+        print(f"Recording video to {args.video_folder}")
 
     # Load the trained policy
     model = PPO.load(args.model_path)

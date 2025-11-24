@@ -67,7 +67,10 @@ def main(cfg: DictConfig):
     logger = configure(run_dir, ["stdout", "tensorboard", "csv"])
 
     # === Evaluation environment and callback (save best model) ===
-    eval_env = DummyVecEnv([make_single_env(cfg.env.name, {"render_mode": None}, monitor=False, seed=cfg.seed + 10)])
+    # Use the same make_kwargs as training, but with render_mode=None for evaluation
+    eval_make_kwargs = dict(cfg.env.make_kwargs) if cfg.env.make_kwargs else {}
+    eval_make_kwargs["render_mode"] = None
+    eval_env = DummyVecEnv([make_single_env(cfg.env.name, eval_make_kwargs, monitor=False, seed=cfg.seed + 10)])
 
     # If training uses VecNormalize, mirror its stats into the eval env (no updates during eval)
     if vecnorm_kwargs:

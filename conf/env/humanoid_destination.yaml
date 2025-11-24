@@ -5,8 +5,8 @@ name: HumanoidDestination-v0
 
 make_kwargs:
   render_mode: null
-  # Target position (x, y) - default is 5 meters forward
-  target_position: [5.0, 0.0]
+  # Target position (x, y) - 20 meters forward for challenging long-distance navigation
+  target_position: [20.0, 0.0]
   # Reward weights
   distance_reward_weight: 1.0
   reach_reward_weight: 10.0
@@ -15,6 +15,9 @@ make_kwargs:
   # Health constraints
   terminate_when_unhealthy: true
   healthy_z_range: [0.8, 2.5]
+  # Destination termination
+  terminate_at_destination: true  # End episode when destination is reached
+  destination_threshold: 1.0      # 1.0m threshold for 20m target (5% tolerance)
   # Reset noise
   reset_noise_scale: 0.01
   exclude_current_positions_from_observation: true
