@@ -21,7 +21,7 @@ make_kwargs:
   ctrl_cost_weight: 0.1             # Penalize erratic actions (was 0.05)
   contact_cost_weight: 2e-7         # Lower contact penalty (allow more exploration)
   healthy_reward: 15.0              # Strong penalty for falls (was 5.0)
-  step_bonus: 30.0                  # Much higher bonus per step (was 25.0)
+  step_bonus: 5.0                   # Lower bonus per step for more natural walking
   
   terminate_when_unhealthy: true
   healthy_z_range: [1.0, 2.0]        # STRICT! Forces upright posture, prevents knee-walking
