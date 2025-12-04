@@ -22,6 +22,7 @@ make_kwargs:
   contact_cost_weight: 2e-7         # Lower contact penalty (allow more exploration)
   healthy_reward: 15.0              # Strong penalty for falls (was 5.0)
   step_bonus: 5.0                   # Lower bonus per step for more natural walking
+  lateral_penalty_weight: 0.3       # Penalty for lateral deviation (y-axis)
   
   terminate_when_unhealthy: true
   healthy_z_range: [1.0, 2.0]        # STRICT! Forces upright posture, prevents knee-walking

@@ -7,10 +7,11 @@ class UprightAndEffortWrapper(gym.Wrapper):
     + upright bonus (torso alignment)
     - action L2 penalty (discourage frantic torques)
     """
-    def __init__(self, env, upright_w=0.05, effort_w=0.001):
+    def __init__(self, env, upright_w=0.05, effort_w=0.001, lateral_w=1.0):
         super().__init__(env)
         self.upright_w = float(upright_w)
         self.effort_w = float(effort_w)
+        self.lateral_w = float(lateral_w)
 
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
@@ -24,6 +25,14 @@ class UprightAndEffortWrapper(gym.Wrapper):
             # Heuristic “uprightness”: prefer pitch/roll near 0
             upright = (w*w - x*x - y*y + z*z)
             reward += self.upright_w * max(0.0, float(upright))
+        except Exception:
+            pass
+
+        # Penalize lateral deviation (y-axis)
+        try:
+            # MuJoCo: data.qpos[0:3] = [x, y, z] of root body
+            y_pos = float(self.env.unwrapped.data.qpos[1])
+            reward -= self.lateral_w * abs(y_pos)
         except Exception:
             pass
         return obs, reward, terminated, truncated, info
