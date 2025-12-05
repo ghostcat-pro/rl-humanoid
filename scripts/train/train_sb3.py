@@ -117,6 +117,13 @@ def main(cfg: DictConfig):
         if os.path.exists(vecnorm_path) and vecnorm_kwargs:
             print(f"Loading VecNormalize stats from: {vecnorm_path}")
             from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
+            
+            # Identify if venv is already wrapped in VecNormalize (from make_vector_env)
+            # If so, unwrap it to avoid double-wrapping when we load from file
+            if isinstance(venv, VecNormalize):
+                print("Unwrapping existing VecNormalize wrapper to avoid nesting...")
+                venv = venv.venv
+            
             venv = VecNormalize.load(vecnorm_path, venv)
             venv.training = True
             venv.norm_reward = True
