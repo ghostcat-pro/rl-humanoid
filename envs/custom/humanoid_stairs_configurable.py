@@ -59,6 +59,7 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
         # New parameters for improved training
         distance_reward_weight: float = 0.0,
         check_healthy_z_relative: bool = False,
+        lateral_penalty_weight: float = 0.0,
         **kwargs,
     ):
         """
@@ -106,6 +107,7 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
             exclude_current_positions_from_observation,
             distance_reward_weight,
             check_healthy_z_relative,
+            lateral_penalty_weight,
             **kwargs,
         )
 
@@ -130,6 +132,7 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
         # New reward/health config
         self._distance_reward_weight = distance_reward_weight
         self._check_healthy_z_relative = check_healthy_z_relative
+        self._lateral_penalty_weight = lateral_penalty_weight
         
         # Health and reset
         self._terminate_when_unhealthy = terminate_when_unhealthy
@@ -537,6 +540,9 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
         
         # Contact cost
         contact_cost = self.contact_cost
+        
+        # Lateral penalty (penalize y-axis movement)
+        lateral_penalty = self._lateral_penalty_weight * abs(xy_velocity[1])
 
         # Total reward
         reward = (
@@ -547,6 +553,7 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
             + distance_reward
             - ctrl_cost 
             - contact_cost
+            - lateral_penalty
         )
 
         observation = self._get_obs()
@@ -560,6 +567,7 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
             "reward_distance": distance_reward,
             "cost_ctrl": ctrl_cost,
             "cost_contact": contact_cost,
+            "cost_lateral": lateral_penalty,
             "x_position": xy_position[0],
             "y_position": xy_position[1],
             "z_position": z_position,
