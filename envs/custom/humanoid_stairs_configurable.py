@@ -56,6 +56,9 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
         healthy_z_range: tuple = (0.8, 3.0),
         reset_noise_scale: float = 1e-2,
         exclude_current_positions_from_observation: bool = True,
+        # New parameters for improved training
+        distance_reward_weight: float = 0.0,
+        check_healthy_z_relative: bool = False,
         **kwargs,
     ):
         """
@@ -78,6 +81,8 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
             healthy_z_range: Valid z-position range for agent
             reset_noise_scale: Noise scale for initial state
             exclude_current_positions_from_observation: Whether to exclude global x,y from obs
+            distance_reward_weight: Weight for distance-to-target penalty (negative reward)
+            check_healthy_z_relative: If True, health check compares z to terrain height
         """
         utils.EzPickle.__init__(
             self,
@@ -99,6 +104,8 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
             healthy_z_range,
             reset_noise_scale,
             exclude_current_positions_from_observation,
+            distance_reward_weight,
+            check_healthy_z_relative,
             **kwargs,
         )
 
@@ -120,6 +127,10 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
         self._healthy_reward = healthy_reward
         self._step_bonus = step_bonus
         
+        # New reward/health config
+        self._distance_reward_weight = distance_reward_weight
+        self._check_healthy_z_relative = check_healthy_z_relative
+        
         # Health and reset
         self._terminate_when_unhealthy = terminate_when_unhealthy
         self._healthy_z_range = healthy_z_range
@@ -133,6 +144,9 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
         self._stairs_end_x = self._stairs_start_x + (num_steps * step_depth)
         self._max_height = num_steps * step_height
         self._steps_x_bounds = []
+        
+        # Target x (end of platform)
+        self._target_x = self._stairs_end_x + self._end_platform_length
         
         for i in range(num_steps):
             start_x = self._stairs_start_x + i * step_depth
@@ -438,7 +452,17 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
     @property
     def is_healthy(self):
         min_z, max_z = self._healthy_z_range
-        is_healthy = min_z < self.data.qpos[2] < max_z
+        current_z = self.data.qpos[2]
+        
+        if self._check_healthy_z_relative:
+            # Check height relative to terrain
+            terrain_h = self._get_terrain_height_at(self.data.qpos[0], self.data.qpos[1])
+            relative_z = current_z - terrain_h
+            is_healthy = min_z < relative_z < max_z
+        else:
+            # Check absolute height
+            is_healthy = min_z < current_z < max_z
+            
         return is_healthy
 
     @property
@@ -501,6 +525,13 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
             step_reward = self._step_bonus * (current_step - self._max_step_reached)
             self._max_step_reached = current_step
 
+        # Distance penalty (optional)
+        distance_reward = 0.0
+        if self._distance_reward_weight > 0:
+            # Penalize distance to target
+            dist = abs(self._target_x - xy_position[0])
+            distance_reward = -self._distance_reward_weight * dist
+
         # Control cost
         ctrl_cost = self.control_cost(action)
         
@@ -508,7 +539,15 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
         contact_cost = self.contact_cost
 
         # Total reward
-        reward = forward_reward + height_reward + healthy_reward + step_reward - ctrl_cost - contact_cost
+        reward = (
+            forward_reward 
+            + height_reward 
+            + healthy_reward 
+            + step_reward 
+            + distance_reward
+            - ctrl_cost 
+            - contact_cost
+        )
 
         observation = self._get_obs()
         terminated = self.terminated
@@ -518,6 +557,7 @@ class HumanoidStairsConfigurableEnv(MujocoEnv, utils.EzPickle):
             "reward_height": height_reward,
             "reward_survive": healthy_reward,
             "reward_step": step_reward,
+            "reward_distance": distance_reward,
             "cost_ctrl": ctrl_cost,
             "cost_contact": contact_cost,
             "x_position": xy_position[0],
