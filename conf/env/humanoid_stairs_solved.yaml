@@ -7,21 +7,21 @@ make_kwargs:
   render_mode: null
   
   # Terrain configuration (Closer stairs)
-  flat_distance_before_stairs: 5.0   # 5m flat before stairs
+  flat_distance_before_stairs: 2.0   # 2m flat before stairs
   num_steps: 8                       # 8 steps
-  step_height: 0.15                  # Standard height (15cm)
-  step_depth: 0.6                    # Standard depth (60cm)
+  step_height: 0.1                  # Standard height (10cm)
+  step_depth: 0.8                    # Standard depth (60cm)
   end_platform_length: 5.0           # 5m platform at top
   stairs_after_top: false
   end_with_abyss: false
   
   # Reward weights (STRONGLY FAVOR CLIMBING)
   forward_reward_weight: 2.0        
-  height_reward_weight: 5.0         
+  height_reward_weight: 8.0         
   ctrl_cost_weight: 0.1             
   contact_cost_weight: 5e-7         
-  healthy_reward: 5.0               
-  step_bonus: 25.0                  
+  healthy_reward: 15.0               
+  step_bonus: 5.0                  
   
   # New parameters
   distance_reward_weight: 0.0       # Optional: set > 0 for distance shaping
@@ -32,7 +32,7 @@ make_kwargs:
   healthy_z_range: [1.0, 2.0]       # Now relative to ground! 
   
   # Wrapper args
-  lateral_penalty_weight: 0.5       # Penalize lateral drift
+  lateral_penalty_weight: 0.3     # Penalize lateral drift
 
 vec_env:
   n_envs: 8
