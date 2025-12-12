@@ -1,5 +1,3 @@
-# @package _global_
-
 # Easy circuit for curriculum learning
 # 3 waypoints, flat terrain first, one easy stair section
 
@@ -31,6 +29,8 @@ make_kwargs:
   contact_cost_weight: 2e-7       # Lower contact penalty
   healthy_reward: 5.0
   
+  # CRITICAL FIX: Check height relative to terrain to prevent "success penalty" bug
+  check_healthy_z_relative: true  # Height checked relative to current step
   terminate_when_unhealthy: true
   healthy_z_range: [0.8, 3.0]
 

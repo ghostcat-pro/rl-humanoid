@@ -56,6 +56,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         # Health constraints
         terminate_when_unhealthy: bool = True,
         healthy_z_range: tuple = (0.8, 3.0),
+        check_healthy_z_relative: bool = False,
         reset_noise_scale: float = 1e-2,
         exclude_current_positions_from_observation: bool = True,
         **kwargs,
@@ -75,6 +76,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
             healthy_reward: Reward for staying healthy
             terminate_when_unhealthy: Whether to end episode on fall
             healthy_z_range: Valid z-position range
+            check_healthy_z_relative: If True, health check compares z to terrain height
             reset_noise_scale: Noise scale for initial state
             exclude_current_positions_from_observation: Whether to exclude global x,y from obs
         """
@@ -93,6 +95,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
             healthy_reward,
             terminate_when_unhealthy,
             healthy_z_range,
+            check_healthy_z_relative,
             reset_noise_scale,
             exclude_current_positions_from_observation,
             **kwargs,
@@ -116,6 +119,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         # Health and reset
         self._terminate_when_unhealthy = terminate_when_unhealthy
         self._healthy_z_range = healthy_z_range
+        self._check_healthy_z_relative = check_healthy_z_relative
         self._reset_noise_scale = reset_noise_scale
         self._exclude_current_positions_from_observation = exclude_current_positions_from_observation
 
@@ -200,8 +204,9 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
               size="{max_x/2} {half_width} 0.1" type="box"/>
 '''
         
-        # Add stairs
+        # Add stairs and elevated platforms
         for stair_idx, (start_x, num_steps, step_height, step_depth) in enumerate(self._stairs):
+            # Add each step
             for i in range(num_steps):
                 center_x = start_x + (i + 0.5) * step_depth
                 height = (i + 0.5) * step_height
@@ -212,6 +217,27 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         <geom condim="3" friction="1 .1 .1" material="MatPlane" name="stair_{stair_idx}_{i+1}" 
               pos="{center_x} 0 {height}" rgba="0.7 0.8 0.7 1" 
               size="{half_depth} {half_width} {half_height}" type="box"/>
+'''
+            
+            # Add elevated platform after stairs (extends to next stair section or end)
+            stairs_end_x = start_x + num_steps * step_depth
+            top_height = num_steps * step_height
+            
+            # Determine platform end (next stair start or max_x)
+            if stair_idx + 1 < len(self._stairs):
+                platform_end_x = self._stairs[stair_idx + 1][0]
+            else:
+                platform_end_x = max_x
+            
+            platform_length = platform_end_x - stairs_end_x
+            if platform_length > 0.1:  # Only add if meaningful length
+                platform_center_x = stairs_end_x + platform_length / 2
+                platform_size_x = platform_length / 2
+                
+                xml += f'''
+        <geom condim="3" friction="1 .1 .1" material="MatPlane" name="platform_{stair_idx}" 
+              pos="{platform_center_x} 0 {top_height}" rgba="0.75 0.85 0.75 1" 
+              size="{platform_size_x} {half_width} 0.05" type="box"/>
 '''
         
         # Add waypoint markers (visual only)
@@ -387,7 +413,17 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
     @property
     def is_healthy(self):
         min_z, max_z = self._healthy_z_range
-        is_healthy = min_z < self.data.qpos[2] < max_z
+        current_z = self.data.qpos[2]
+        
+        if self._check_healthy_z_relative:
+            # Check height relative to terrain
+            terrain_h = self._get_terrain_height_at(self.data.qpos[0], self.data.qpos[1])
+            relative_z = current_z - terrain_h
+            is_healthy = min_z < relative_z < max_z
+        else:
+            # Check absolute height
+            is_healthy = min_z < current_z < max_z
+            
         return is_healthy
 
     @property

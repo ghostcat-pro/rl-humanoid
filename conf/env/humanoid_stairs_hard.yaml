@@ -7,24 +7,27 @@ make_kwargs:
   render_mode: null
   
   # Challenging terrain configuration
-  flat_distance_before_stairs: 15.0  # Less practice distance
+  flat_distance_before_stairs: 2.0  # Less practice distance
   num_steps: 15                      # More steps
   step_height: 0.20                  # Taller steps (20cm)
   step_depth: 0.4                    # Shorter steps (40cm) - steeper
-  end_platform_length: 3.0           # Smaller end platform
+  end_platform_length: 5.0           # Smaller end platform
   stairs_after_top: false
   end_with_abyss: false
   
   # Reward weights (standard)
-  forward_reward_weight: 1.25
-  height_reward_weight: 2.0
-  ctrl_cost_weight: 0.1
-  contact_cost_weight: 1e-6         # Higher penalty for smoother movement
-  healthy_reward: 5.0
-  step_bonus: 10.0
+  forward_reward_weight: 2.0        # Increased to encourage reaching stairs
+  height_reward_weight: 8.0         # Much higher reward for climbing (was 5.0)
+  ctrl_cost_weight: 0.1             # Penalize erratic actions (was 0.05)
+  contact_cost_weight: 2e-7         # Lower contact penalty (allow more exploration)
+  healthy_reward: 5.0               # Baseline reward for staying upright
+  step_bonus: 5.0                   # Lower bonus per step for more natural walking
+  lateral_penalty_weight: 1.0       # Strong penalty for lateral deviation (y-axis)
   
+  # CRITICAL FIX: Check height relative to terrain to prevent "success penalty" bug
+  check_healthy_z_relative: true     # Height checked relative to current step
   terminate_when_unhealthy: true
-  healthy_z_range: [0.8, 3.0]
+  healthy_z_range: [1.0, 2.0]        # STRICT! Forces upright posture, prevents knee-walking
 
 vec_env:
   n_envs: 8

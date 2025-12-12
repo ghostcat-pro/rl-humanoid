@@ -1,0 +1,45 @@
+# Square circuit with stairs - Combines turning practice with stair climbing
+# Prevents catastrophic forgetting of stair-climbing ability
+
+name: HumanoidCircuit-v0
+
+make_kwargs:
+  render_mode: null
+  
+  # Square pattern with waypoints
+  # Position waypoints AFTER stairs so humanoid is on elevated platforms
+  waypoints:
+    - [8.0, 0.0]     # Forward (after first stair, on platform)
+    - [8.0, 8.0]     # Right turn (on flat ground)
+    - [0.0, 8.0]     # Back (on flat ground)
+    - [0.0, 0.0]     # Left turn (back to start on ground level)
+  
+  waypoint_reach_threshold: 1.5
+  
+  # Include stairs to maintain climbing ability
+  # stairs: [[x_position, num_steps, step_height, step_depth]]
+  # First stair: 3.0 to 6.2 (ends at height 0.4m)
+  # Platform extends from 6.2 to terrain end
+  stairs:
+    - [3.0, 4, 0.10, 0.8]    # Easy stairs - climb up to platform level
+  
+  terrain_width: 12.0
+  
+  # Match circuit_easy reward weights (proven successful)
+  progress_reward_weight: 150.0
+  waypoint_bonus: 75.0
+  height_reward_weight: 3.0
+  forward_reward_weight: 1.5
+  ctrl_cost_weight: 0.05
+  contact_cost_weight: 2e-7
+  
+  # Health constraints
+  healthy_reward: 5.0
+  check_healthy_z_relative: true
+  terminate_when_unhealthy: true
+  healthy_z_range: [0.8, 3.0]
+
+vec_env:
+  n_envs: 8
+  start_method: spawn
+  monitor: true

@@ -24,6 +24,8 @@ make_kwargs:
   step_bonus: 5.0                   # Lower bonus per step for more natural walking
   lateral_penalty_weight: 0.3       # Penalty for lateral deviation (y-axis)
   
+  # CRITICAL FIX: Check height relative to terrain to prevent "success penalty" bug
+  check_healthy_z_relative: true    # Height checked relative to current step
   terminate_when_unhealthy: true
   healthy_z_range: [1.0, 2.0]        # STRICT! Forces upright posture, prevents knee-walking
 

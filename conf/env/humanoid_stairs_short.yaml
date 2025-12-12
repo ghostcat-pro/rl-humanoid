@@ -23,6 +23,8 @@ make_kwargs:
   healthy_reward: 5.0
   step_bonus: 10.0
   
+  # CRITICAL FIX: Check height relative to terrain to prevent "success penalty" bug
+  check_healthy_z_relative: true     # Height checked relative to current step
   terminate_when_unhealthy: true
   healthy_z_range: [0.8, 3.0]
 

@@ -35,6 +35,8 @@ make_kwargs:
   contact_cost_weight: 5e-7       # Encourage smooth stepping
   healthy_reward: 5.0
   
+  # CRITICAL FIX: Check height relative to terrain to prevent "success penalty" bug
+  check_healthy_z_relative: true  # Height checked relative to current step
   # Health constraints
   terminate_when_unhealthy: true
   healthy_z_range: [0.8, 3.0]     # Allow higher z for top of stairs

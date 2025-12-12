@@ -20,7 +20,7 @@ make_kwargs:
   # No stairs
   stairs: []
   
-  terrain_width: 12.0  # Large area for square
+  terrain_width: 30.0  # Large area for square
   
   # Reward weights (navigation focused)
   progress_reward_weight: 200.0   # Very high progress reward
