@@ -70,7 +70,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
             progress_reward_weight: Weight for progress toward current waypoint
             waypoint_bonus: Large bonus for reaching each waypoint
             height_reward_weight: Weight for height gain (climbing stairs)
-            forward_reward_weight: Weight for forward velocity
+            forward_reward_weight: Weight for velocity toward current waypoint (directional)
             ctrl_cost_weight: Weight for control cost
             contact_cost_weight: Weight for contact forces penalty
             healthy_reward: Reward for staying healthy
@@ -483,8 +483,14 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         # Progress reward (getting closer to current waypoint)
         progress_reward = (prev_dist - dist) * self._progress_reward_weight
 
-        # Forward reward (general forward movement)
-        forward_reward = self._forward_reward_weight * xy_velocity[0]
+        # Directional reward (velocity aligned with direction to waypoint)
+        # This rewards moving toward the current waypoint, regardless of direction
+        if dist > 0.1:  # Avoid division by zero when very close to waypoint
+            direction_to_waypoint = (self.current_waypoint - xy_position) / dist
+            velocity_toward_waypoint = np.dot(xy_velocity, direction_to_waypoint)
+            forward_reward = self._forward_reward_weight * max(0, velocity_toward_waypoint)
+        else:
+            forward_reward = 0.0
 
         # Height reward (climbing stairs)
         height_gained = z_position - prev_z_position
