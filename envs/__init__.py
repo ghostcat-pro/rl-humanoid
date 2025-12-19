@@ -31,7 +31,7 @@ register(
 register(
     id="HumanoidCircuit-v0",
     entry_point="envs.custom.humanoid_circuit:HumanoidCircuitEnv",
-    max_episode_steps=2000,  # Longer episodes for multiple waypoints
+    max_episode_steps=5000,  # Increased for slower, controlled navigation with balance
 )
 
 __all__ = [

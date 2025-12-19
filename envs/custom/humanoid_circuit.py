@@ -49,6 +49,10 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         waypoint_bonus: float = 50.0,
         height_reward_weight: float = 2.0,
         forward_reward_weight: float = 1.0,
+        heading_reward_weight: float = 5.0,  # Reward for facing the right direction
+        balance_reward_weight: float = 0.0,  # Reward for keeping torso upright
+        optimal_speed: float = 1.0,  # Target speed for controlled navigation
+        speed_regulation_weight: float = 0.0,  # Reward for maintaining optimal speed
         ctrl_cost_weight: float = 0.1,
         contact_cost_weight: float = 5e-7,
         healthy_reward: float = 5.0,
@@ -71,6 +75,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
             waypoint_bonus: Large bonus for reaching each waypoint
             height_reward_weight: Weight for height gain (climbing stairs)
             forward_reward_weight: Weight for velocity toward current waypoint (directional)
+            heading_reward_weight: Weight for facing toward waypoint (alignment)
             ctrl_cost_weight: Weight for control cost
             contact_cost_weight: Weight for contact forces penalty
             healthy_reward: Reward for staying healthy
@@ -90,6 +95,10 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
             waypoint_bonus,
             height_reward_weight,
             forward_reward_weight,
+            heading_reward_weight,
+            balance_reward_weight,
+            optimal_speed,
+            speed_regulation_weight,
             ctrl_cost_weight,
             contact_cost_weight,
             healthy_reward,
@@ -112,6 +121,10 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         self._waypoint_bonus = waypoint_bonus
         self._height_reward_weight = height_reward_weight
         self._forward_reward_weight = forward_reward_weight
+        self._heading_reward_weight = heading_reward_weight
+        self._balance_reward_weight = balance_reward_weight
+        self._optimal_speed = optimal_speed
+        self._speed_regulation_weight = speed_regulation_weight
         self._ctrl_cost_weight = ctrl_cost_weight
         self._contact_cost_weight = contact_cost_weight
         self._healthy_reward = healthy_reward
@@ -140,9 +153,9 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         self._temp_xml.write(xml_content)
         self._temp_xml.close()
         
-        # Observation space: 376 (base) + 25 (height grid) + 2 (waypoint vector) + 1 (waypoint progress)
+        # Observation space: 376 (base) + 25 (height grid) + 2 (waypoint vector) + 1 (waypoint progress) + 2 (heading error sin/cos)
         observation_space = Box(
-            low=-np.inf, high=np.inf, shape=(404,), dtype=np.float64
+            low=-np.inf, high=np.inf, shape=(406,), dtype=np.float64
         )
 
         MujocoEnv.__init__(
@@ -448,6 +461,24 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         
         # Waypoint progress (normalized)
         waypoint_progress = np.array([self._waypoints_reached / len(self._waypoints)], dtype=np.float64)
+        
+        # Heading error: difference between where humanoid faces vs where it should go
+        # Get humanoid yaw from quaternion (qpos[3:7])
+        quat = self.data.qpos[3:7]  # [qw, qx, qy, qz]
+        # Convert quaternion to yaw angle
+        # yaw = atan2(2*(qw*qz + qx*qy), 1 - 2*(qy^2 + qz^2))
+        yaw = np.arctan2(2.0 * (quat[0] * quat[3] + quat[1] * quat[2]),
+                        1.0 - 2.0 * (quat[2]**2 + quat[3]**2))
+        
+        # Target direction to waypoint
+        target_dir = np.arctan2(vector_to_waypoint[1], vector_to_waypoint[0])
+        
+        # Heading error (wrapped to [-pi, pi])
+        heading_error = target_dir - yaw
+        heading_error = np.arctan2(np.sin(heading_error), np.cos(heading_error))  # wrap to [-pi, pi]
+        
+        # Encode as sin/cos to avoid discontinuity at ±π
+        heading_error_obs = np.array([np.sin(heading_error), np.cos(heading_error)], dtype=np.float64)
 
         if self._exclude_current_positions_from_observation:
             position = position[2:]
@@ -463,13 +494,15 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
                 height_grid,
                 vector_to_waypoint,
                 waypoint_progress,
+                heading_error_obs,
             )
         )
 
     def step(self, action):
         prev_xy_position = self.data.qpos[0:2].copy()
         prev_z_position = self.data.qpos[2]
-        prev_dist = np.linalg.norm(self.current_waypoint - prev_xy_position)
+        prev_waypoint = self.current_waypoint.copy()  # Store current waypoint before it changes
+        prev_dist = np.linalg.norm(prev_waypoint - prev_xy_position)
 
         self.do_simulation(action, self.frame_skip)
 
@@ -481,7 +514,9 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         dist = np.linalg.norm(self.current_waypoint - xy_position)
 
         # Progress reward (getting closer to current waypoint)
-        progress_reward = (prev_dist - dist) * self._progress_reward_weight
+        # Use prev_waypoint for consistent comparison
+        prev_dist_to_current = np.linalg.norm(self.current_waypoint - prev_xy_position)
+        progress_reward = (prev_dist_to_current - dist) * self._progress_reward_weight
 
         # Directional reward (velocity aligned with direction to waypoint)
         # This rewards moving toward the current waypoint, regardless of direction
@@ -491,10 +526,46 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
             forward_reward = self._forward_reward_weight * max(0, velocity_toward_waypoint)
         else:
             forward_reward = 0.0
+        
+        # Heading alignment reward (facing toward waypoint)
+        # Only reward heading when actually moving to avoid exploitation
+        speed = np.linalg.norm(xy_velocity)
+        if dist > 0.1 and speed > 0.1:  # Only reward heading when moving
+            # Get humanoid yaw from quaternion
+            quat = self.data.qpos[3:7]
+            yaw = np.arctan2(2.0 * (quat[0] * quat[3] + quat[1] * quat[2]),
+                            1.0 - 2.0 * (quat[2]**2 + quat[3]**2))
+            
+            target_dir = np.arctan2(self.current_waypoint[1] - xy_position[1],
+                                   self.current_waypoint[0] - xy_position[0])
+            heading_error = target_dir - yaw
+            heading_error = np.arctan2(np.sin(heading_error), np.cos(heading_error))
+            # Reward alignment: cos(heading_error) ranges from -1 (opposite) to +1 (aligned)
+            # Scale by speed so faster movement gets more heading reward
+            heading_reward = self._heading_reward_weight * np.cos(heading_error) * min(speed, 2.0)
+        else:
+            heading_reward = 0.0
 
         # Height reward (climbing stairs)
         height_gained = z_position - prev_z_position
         height_reward = self._height_reward_weight * max(0, height_gained)
+
+        # Balance reward (upright torso)
+        # Quaternion to get torso orientation - penalize tilt from vertical
+        quat = self.data.qpos[3:7]
+        # Extract roll and pitch from quaternion (yaw doesn't matter for balance)
+        # w, x, y, z = quat[0], quat[1], quat[2], quat[3]
+        roll = np.arctan2(2.0 * (quat[0] * quat[1] + quat[2] * quat[3]),
+                         1.0 - 2.0 * (quat[1]**2 + quat[2]**2))
+        pitch = np.arcsin(2.0 * (quat[0] * quat[2] - quat[3] * quat[1]))
+        # Reward uprightness: 1.0 when perfectly upright, 0.0 at 90 degrees
+        tilt = np.sqrt(roll**2 + pitch**2)
+        balance_reward = self._balance_reward_weight * np.cos(tilt)
+
+        # Speed regulation reward (encourage moderate, controlled speed)
+        # Gaussian reward centered at optimal_speed with sigma=0.5
+        speed_error = speed - self._optimal_speed
+        speed_regulation_reward = self._speed_regulation_weight * np.exp(-0.5 * (speed_error / 0.5)**2)
 
         # Waypoint bonus
         waypoint_reward = 0.0
@@ -519,7 +590,10 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         # Total reward
         reward = (
             progress_reward + 
-            forward_reward + 
+            forward_reward +
+            heading_reward +
+            balance_reward +
+            speed_regulation_reward +
             height_reward + 
             waypoint_reward + 
             healthy_reward - 
@@ -533,6 +607,9 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         info = {
             "reward_progress": progress_reward,
             "reward_forward": forward_reward,
+            "reward_heading": heading_reward,
+            "reward_balance": balance_reward,
+            "reward_speed": speed_regulation_reward,
             "reward_height": height_reward,
             "reward_waypoint": waypoint_reward,
             "reward_survive": healthy_reward,
