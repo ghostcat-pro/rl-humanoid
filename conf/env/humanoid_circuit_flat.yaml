@@ -23,6 +23,7 @@ make_kwargs:
   # Reward weights (navigation focused)
   progress_reward_weight: 200.0   # Very high progress reward
   waypoint_bonus: 150.0           # Increased to encourage reaching all waypoints
+  circuit_completion_bonus: 500.0 # Large one-time reward for completing all 4 waypoints
   height_reward_weight: 0.0       # No height component
   forward_reward_weight: 1.0      # Increased - reward forward movement more
   heading_reward_weight: 2.0      # Reward for facing right direction while moving (reduced)

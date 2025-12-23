@@ -47,6 +47,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         # Reward weights
         progress_reward_weight: float = 100.0,
         waypoint_bonus: float = 50.0,
+        circuit_completion_bonus: float = 0.0,  # Large bonus for completing all waypoints
         height_reward_weight: float = 2.0,
         forward_reward_weight: float = 1.0,
         heading_reward_weight: float = 5.0,  # Reward for facing the right direction
@@ -93,6 +94,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
             terrain_width,
             progress_reward_weight,
             waypoint_bonus,
+            circuit_completion_bonus,
             height_reward_weight,
             forward_reward_weight,
             heading_reward_weight,
@@ -119,6 +121,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         # Reward weights
         self._progress_reward_weight = progress_reward_weight
         self._waypoint_bonus = waypoint_bonus
+        self._circuit_completion_bonus = circuit_completion_bonus
         self._height_reward_weight = height_reward_weight
         self._forward_reward_weight = forward_reward_weight
         self._heading_reward_weight = heading_reward_weight
@@ -140,6 +143,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         self._current_waypoint_index = 0
         self._waypoints_reached = 0
         self._prev_distance_to_waypoint = 0.0
+        self._circuit_bonus_awarded = False  # Track if completion bonus already given
 
         # Height grid for terrain perception
         self._height_grid_size = 5
@@ -577,8 +581,12 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
                 self._waypoints_reached += 1
                 waypoint_reached = True
 
-        # Circuit completion bonus
+        # Circuit completion bonus (one-time large reward for completing all waypoints)
         circuit_complete = (self._waypoints_reached == len(self._waypoints))
+        circuit_completion_reward = 0.0
+        if circuit_complete and not self._circuit_bonus_awarded:
+            circuit_completion_reward = self._circuit_completion_bonus
+            self._circuit_bonus_awarded = True
         
         # Healthy reward
         healthy_reward = self.healthy_reward
@@ -595,7 +603,8 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
             balance_reward +
             speed_regulation_reward +
             height_reward + 
-            waypoint_reward + 
+            waypoint_reward +
+            circuit_completion_reward +
             healthy_reward - 
             ctrl_cost - 
             contact_cost
@@ -612,6 +621,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
             "reward_speed": speed_regulation_reward,
             "reward_height": height_reward,
             "reward_waypoint": waypoint_reward,
+            "reward_circuit_completion": circuit_completion_reward,
             "reward_survive": healthy_reward,
             "cost_ctrl": ctrl_cost,
             "cost_contact": contact_cost,
@@ -651,6 +661,7 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         self._current_waypoint_index = 0
         self._waypoints_reached = 0
         self._prev_distance_to_waypoint = np.linalg.norm(self.current_waypoint - qpos[0:2])
+        self._circuit_bonus_awarded = False
 
         observation = self._get_obs()
         return observation
