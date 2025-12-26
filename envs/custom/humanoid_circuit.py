@@ -219,6 +219,14 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         <geom condim="3" friction="1 .1 .1" material="MatPlane" name="floor" 
               pos="{max_x/2} 0 -0.1" rgba="0.8 0.9 0.8 1" 
               size="{max_x/2} {half_width} 0.1" type="box"/>
+        
+        <!-- Side walls to prevent bypassing obstacles -->
+        <geom condim="3" friction="1 .1 .1" name="wall_left" 
+              pos="{max_x/2} {-half_width} 1.0" rgba="0.6 0.6 0.6 0.5" 
+              size="{max_x/2} 0.1 1.0" type="box"/>
+        <geom condim="3" friction="1 .1 .1" name="wall_right" 
+              pos="{max_x/2} {half_width} 1.0" rgba="0.6 0.6 0.6 0.5" 
+              size="{max_x/2} 0.1 1.0" type="box"/>
 '''
         
         # Add stairs and elevated platforms
@@ -259,9 +267,12 @@ class HumanoidCircuitEnv(MujocoEnv, utils.EzPickle):
         
         # Add waypoint markers (visual only)
         for wp_idx, (wp_x, wp_y) in enumerate(self._waypoints):
+            # Get terrain height at waypoint position and place marker above it
+            terrain_height = self._get_terrain_height_at(wp_x, wp_y)
+            marker_z = terrain_height + 0.5  # Place marker 0.5m above terrain
             xml += f'''
         <!-- Waypoint {wp_idx + 1} marker -->
-        <geom name="waypoint_{wp_idx}" pos="{wp_x} {wp_y} 0.5" rgba="1 0 0 0.3" 
+        <geom name="waypoint_{wp_idx}" pos="{wp_x} {wp_y} {marker_z}" rgba="1 0 0 0.3" 
               size="0.3 0.3 0.5" type="cylinder" contype="0" conaffinity="0"/>
 '''
         
