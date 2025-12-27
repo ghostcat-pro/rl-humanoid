@@ -1,0 +1,71 @@
+exp_name: rl-humanoid
+seed: 42
+resume_from: null
+paths:
+  log_root: null
+vecnorm:
+  enabled: true
+  clip_obs: 10.0
+  gamma: 0.99
+  epsilon: 1.0e-08
+env:
+  name: HumanoidCircuit-v0
+  make_kwargs:
+    render_mode: null
+    waypoints:
+    - - 8.0
+      - 0.0
+    - - 15.0
+      - 0.0
+    - - 20.0
+      - 3.0
+    waypoint_reach_threshold: 1.5
+    stairs:
+    - - 9.0
+      - 5
+      - 0.1
+      - 0.8
+    terrain_width: 15.0
+    progress_reward_weight: 200.0
+    waypoint_bonus: 150.0
+    circuit_completion_bonus: 500.0
+    height_reward_weight: 2.0
+    forward_reward_weight: 1.0
+    heading_reward_weight: 2.0
+    balance_reward_weight: 0.5
+    optimal_speed: 1.0
+    speed_regulation_weight: 0.2
+    ctrl_cost_weight: 0.1
+    contact_cost_weight: 5.0e-07
+    healthy_reward: 5.0
+    terminate_when_unhealthy: true
+    healthy_z_range:
+    - 1.0
+    - 2.0
+    check_healthy_z_relative: true
+  vec_env:
+    n_envs: 8
+    start_method: spawn
+    monitor: true
+algo:
+  policy: MlpPolicy
+  device: cuda
+  policy_kwargs:
+    net_arch:
+    - 256
+    - 256
+  hyperparams:
+    learning_rate: 0.0003
+    n_steps: 4096
+    batch_size: 16384
+    n_epochs: 10
+    gamma: 0.99
+    gae_lambda: 0.95
+    clip_range: 0.2
+    ent_coef: 0.005
+    vf_coef: 0.25
+    max_grad_norm: 0.5
+training:
+  total_timesteps: 80000000
+  log_interval: 10
+  checkpoint_every_steps: 250000

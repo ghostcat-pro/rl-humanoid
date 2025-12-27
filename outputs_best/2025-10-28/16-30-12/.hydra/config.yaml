@@ -1,0 +1,35 @@
+exp_name: rl-humanoid
+seed: 42
+paths:
+  log_root: null
+vecnorm:
+  enabled: true
+  clip_obs: 10.0
+  gamma: 0.99
+  epsilon: 1.0e-08
+env:
+  name: Humanoid-v5
+  make_kwargs:
+    render_mode: null
+  vec_env:
+    n_envs: 16
+    start_method: spawn
+    monitor: true
+algo:
+  policy: MlpPolicy
+  device: cuda
+  hyperparams:
+    learning_rate: 0.00025
+    n_steps: 1024
+    batch_size: 8192
+    n_epochs: 10
+    gamma: 0.99
+    gae_lambda: 0.95
+    clip_range: 0.2
+    ent_coef: 0.005
+    vf_coef: 0.5
+    max_grad_norm: 0.5
+training:
+  total_timesteps: 50000000
+  log_interval: 10
+  checkpoint_every_steps: 250000

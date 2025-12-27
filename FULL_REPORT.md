@@ -121,11 +121,8 @@ This phase focused on developing stair-climbing capabilities with various config
 #### **2025-11-23/19-57-27** - Quick Iteration
 - **Training Duration**: 20M timesteps
 
-#### **2025-11-23/21-14-17** - Best Easy Stairs ⭐
+#### **2025-11-23/21-14-17** - Best Easy Stairs 
 - **Training Duration**: 20M timesteps
-- **Evaluation Video**: `videos/stairs_easy_best/`
-- **Performance**: Successfully climbs 8-step stairs consistently
-- **Notes**: One of the best performing easy stairs models
 
 #### **2025-11-23/22-10-57** - Extended Refinement
 - **Training Duration**: 50M timesteps
@@ -143,8 +140,11 @@ This phase focused on developing stair-climbing capabilities with various config
 #### **2025-11-30/21-57-09** - Long Duration
 - **Training Duration**: 50M timesteps
 
-#### **2025-12-06/17-36-50** - Final Easy Stairs
+#### **2025-12-06/17-36-50** - Final Easy Stairs ⭐ ->>>>> Francisco Comment: este é o melhor cenário - do video
 - **Training Duration**: 30M timesteps
+- **Evaluation Video**: `videos/stairs_easy_best/`
+- **Performance**: Successfully climbs 8-step stairs consistently
+- **Notes**: One of the best performing easy stairs models
 
 ### Medium/Hard Stairs Series
 
