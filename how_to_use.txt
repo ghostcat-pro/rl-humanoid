@@ -1,57 +1,105 @@
-# lista de comandos para treino e avaliacao
+# Best Model Results - Training & Evaluation Commands
 
-#############################################################
-##1
-#############################################################
+This file contains the exact commands used to train and evaluate the **4 best performing models** for each scenario.
+Each section includes the proper `--env_kwargs` configuration for accurate evaluation.
 
-#exemplo comando para fazer o treino do cenario corrida em frente
+================================================================================
+## 1. HUMANOID FORWARD WALKING (50M steps)
+================================================================================
 
-source .venv/bin/activate && python scripts/train/train_sb3.py env=humanoid training.total_timesteps=50000000
+Best Model: outputs/2025-10-28/16-30-12
+Performance: 7435.45 ± 3955.75 mean reward
 
-#exemplo comando para fazer a avaliacao do cenario corrida em frente
+### Training Command:
+source .venv/bin/activate && python scripts/train/train_sb3.py \
+  env=humanoid \
+  training.total_timesteps=50000000
 
-source .venv/bin/activate && python scripts/evaluate/evaluate_sb3.py   --env_id Humanoid-v5   --model_path outputs/2025-10-28/16-30-12/eval/best_model.zip   --vecnorm_path outputs/2025-10-28/16-30-12/vecnormalize_final.pkl   --render   --deterministic   --episodes 5
-
-
-#############################################################
-##2
-#############################################################
-
-
-#exemplo comando para fazer o treino do cenario easy stairs
-
-source .venv/bin/activate && python scripts/train/train_sb3.py env=humanoid_stairs_easy training.total_timesteps=30000000
-
-#exemplo comando para fazer a avaliacao do cenario easy stairs
-
-source .venv/bin/activate && python scripts/evaluate/evaluate_sb3.py   --env_id HumanoidStairsConfigurable-v0   --model_path outputs/2025-12-06/17-36-50/eval/best_model.zip   --vecnorm_path outputs/2025-12-06/17-36-50/vecnormalize_final.pkl   --render   --deterministic   --episodes 5   --env_kwargs '{"flat_distance_before_stairs": 2.0, "num_steps": 8, "step_height": 0.1, "step_depth": 0.8, "end_platform_length": 5.0, "stairs_after_top": false, "end_with_abyss": false, "forward_reward_weight": 2.0, "height_reward_weight": 8.0, "ctrl_cost_weight": 0.1, "contact_cost_weight": 2e-07, "healthy_reward": 15.0, "step_bonus": 5.0, "lateral_penalty_weight": 0.3, "check_healthy_z_relative": true, "terminate_when_unhealthy": true, "healthy_z_range": [1.0, 2.0]}'
+### Evaluation Command:
+source .venv/bin/activate && python scripts/evaluate/evaluate_sb3.py \
+  --env_id Humanoid-v5 \
+  --model_path outputs/2025-10-28/16-30-12/eval/best_model.zip \
+  --vecnorm_path outputs/2025-10-28/16-30-12/vecnormalize_final.pkl \
+  --render \
+  --deterministic \
+  --episodes 5
 
 
-#############################################################
-##3
-#############################################################
+================================================================================
+## 2. STAIRS CLIMBING - EASY (30M steps)
+================================================================================
+
+Best Model: outputs/2025-12-06/17-36-50
+Configuration: 8 steps, 10cm height, 80cm depth
+
+### Training Command:
+source .venv/bin/activate && python scripts/train/train_sb3.py \
+  env=humanoid_stairs_easy \
+  training.total_timesteps=30000000
+
+### Evaluation Command:
+source .venv/bin/activate && python scripts/evaluate/evaluate_sb3.py \
+  --env_id HumanoidStairsConfigurable-v0 \
+  --model_path outputs/2025-12-06/17-36-50/eval/best_model.zip \
+  --vecnorm_path outputs/2025-12-06/17-36-50/vecnormalize_final.pkl \
+  --render \
+  --deterministic \
+  --episodes 5 \
+  --env_kwargs '{"flat_distance_before_stairs": 2.0, "num_steps": 8, "step_height": 0.1, "step_depth": 0.8, "end_platform_length": 5.0, "stairs_after_top": false, "end_with_abyss": false, "forward_reward_weight": 2.0, "height_reward_weight": 8.0, "ctrl_cost_weight": 0.1, "contact_cost_weight": 2e-07, "healthy_reward": 15.0, "step_bonus": 5.0, "lateral_penalty_weight": 0.3, "check_healthy_z_relative": true, "terminate_when_unhealthy": true, "healthy_z_range": [1.0, 2.0]}'
 
 
-#exemplo comando para fazer o treino do cenario circuito flat (4 waipoints)
+================================================================================
+## 3. CIRCUIT NAVIGATION - FLAT (80M steps, 4 waypoints)
+================================================================================
 
-source .venv/bin/activate && python scripts/train/train_sb3.py env=humanoid_circuit_flat training.total_timesteps=80000000 2>&1 | tee training_circuit_bonus_fixed.log
+Best Model: outputs/2025-12-23/14-37-50
+Configuration: Square circuit (5m x 5m), no stairs
 
-#exemplo comando para fazer a avaliacao do cenario circuito flat (4 waipoints)
+### Training Command:
+source .venv/bin/activate && python scripts/train/train_sb3.py \
+  env=humanoid_circuit_flat \
+  training.total_timesteps=80000000 2>&1 | tee training_circuit_bonus_fixed.log
 
-source .venv/bin/activate && python scripts/evaluate/evaluate_sb3.py --env_id HumanoidCircuit-v0 --model_path outputs/2025-12-23/14-37-50/eval/best_model.zip --vecnorm_path outputs/2025-12-23/14-37-50/vecnormalize_final.pkl --render --deterministic --episodes 5 --env_kwargs '{"waypoints": [[5.0, 0.0], [5.0, 5.0], [2.0, 5.0], [2.0, 0.0]], "waypoint_reach_threshold": 1.5, "stairs": [], "terrain_width": 15.0, "progress_reward_weight": 200.0, "waypoint_bonus": 150.0, "circuit_completion_bonus": 500.0, "height_reward_weight": 0.0, "forward_reward_weight": 1.0, "heading_reward_weight": 2.0, "balance_reward_weight": 0.5, "optimal_speed": 1.2, "speed_regulation_weight": 0.2, "ctrl_cost_weight": 0.1, "contact_cost_weight": 5e-7, "healthy_reward": 5.0, "terminate_when_unhealthy": true, "healthy_z_range": [0.8, 3.0]}'
+### Evaluation Command:
+source .venv/bin/activate && python scripts/evaluate/evaluate_sb3.py \
+  --env_id HumanoidCircuit-v0 \
+  --model_path outputs/2025-12-23/14-37-50/eval/best_model.zip \
+  --vecnorm_path outputs/2025-12-23/14-37-50/vecnormalize_final.pkl \
+  --render \
+  --deterministic \
+  --episodes 5 \
+  --env_kwargs '{"waypoints": [[5.0, 0.0], [5.0, 5.0], [2.0, 5.0], [2.0, 0.0]], "waypoint_reach_threshold": 1.5, "stairs": [], "terrain_width": 15.0, "progress_reward_weight": 200.0, "waypoint_bonus": 150.0, "circuit_completion_bonus": 500.0, "height_reward_weight": 0.0, "forward_reward_weight": 1.0, "heading_reward_weight": 2.0, "balance_reward_weight": 0.5, "optimal_speed": 1.2, "speed_regulation_weight": 0.2, "ctrl_cost_weight": 0.1, "contact_cost_weight": 5e-7, "healthy_reward": 5.0, "terminate_when_unhealthy": true, "healthy_z_range": [0.8, 3.0]}'
 
 
-#############################################################
-##4
-#############################################################
+================================================================================
+## 4. CIRCUIT NAVIGATION - WITH STAIRS (80M steps, 3 waypoints + 1 staircase)
+================================================================================
+
+Best Model: outputs/2025-12-24/16-29-37
+Configuration: 3 waypoints with 5-step staircase (10cm height, 80cm depth)
+
+### Training Command:
+source .venv/bin/activate && python scripts/train/train_sb3.py \
+  env=humanoid_circuit_easy \
+  training.total_timesteps=80000000 2>&1 | tee training_circuit_stairs_relative_z.log
+
+### Evaluation Command:
+source .venv/bin/activate && python scripts/evaluate/evaluate_sb3.py \
+  --env_id HumanoidCircuit-v0 \
+  --model_path outputs/2025-12-24/16-29-37/eval/best_model.zip \
+  --vecnorm_path outputs/2025-12-24/16-29-37/vecnormalize_final.pkl \
+  --render \
+  --deterministic \
+  --episodes 5 \
+  --env_kwargs '{"waypoints": [[8.0, 0.0], [15.0, 0.0], [20.0, 3.0]], "waypoint_reach_threshold": 1.5, "stairs": [[9.0, 5, 0.1, 0.8]], "terrain_width": 15.0, "progress_reward_weight": 200.0, "waypoint_bonus": 150.0, "circuit_completion_bonus": 500.0, "height_reward_weight": 2.0, "forward_reward_weight": 1.0, "heading_reward_weight": 2.0, "balance_reward_weight": 0.5, "optimal_speed": 1.0, "speed_regulation_weight": 0.2, "ctrl_cost_weight": 0.1, "contact_cost_weight": 5e-7, "healthy_reward": 5.0, "terminate_when_unhealthy": true, "healthy_z_range": [1.0, 2.0], "check_healthy_z_relative": true}'
 
 
-#exemplo comando para fazer o treino do cenario circuito com escadas
+================================================================================
+## NOTES
+================================================================================
 
-source .venv/bin/activate && python scripts/train/train_sb3.py env=humanoid_circuit_easy training.total_timesteps=80000000 2>&1 | tee training_circuit_stairs_relative_z.log
-
-scripts/train/train_sb3.py env=humanoid_circuit_easy training.total_timesteps=80000000
-
-#exemplo comando para fazer a avalicao do cenario circuito com escadas
-
-source .venv/bin/activate && python scripts/evaluate/evaluate_sb3.py   --env_id HumanoidCircuit-v0   --model_path outputs/2025-12-24/16-29-37/eval/best_model.zip   --vecnorm_path outputs/2025-12-24/16-29-37/vecnormalize_final.pkl   --render   --deterministic   --episodes 5   --env_kwargs '{"waypoints": [[8.0, 0.0], [15.0, 0.0], [20.0, 3.0]], "waypoint_reach_threshold": 1.5, "stairs": [[9.0, 5, 0.1, 0.8]], "terrain_width": 15.0, "progress_reward_weight": 200.0, "waypoint_bonus": 150.0, "circuit_completion_bonus": 500.0, "height_reward_weight": 2.0, "forward_reward_weight": 1.0, "heading_reward_weight": 2.0, "balance_reward_weight": 0.5, "optimal_speed": 1.0, "speed_regulation_weight": 0.2, "ctrl_cost_weight": 0.1, "contact_cost_weight": 5e-7, "healthy_reward": 5.0, "terminate_when_unhealthy": true, "healthy_z_range": [1.0, 2.0], "check_healthy_z_relative": true}'
+- All commands use Linux/Mac bash syntax (`source` for activation, `\` for line continuation)
+- For Windows PowerShell, replace `source .venv/bin/activate` with `.venv\Scripts\activate`
+- For Windows PowerShell, replace `\` with backtick `` ` `` for line continuation
+- The `--env_kwargs` JSON must match the exact configuration used during training
+- Model paths are relative to the project root directory

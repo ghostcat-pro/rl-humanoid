@@ -531,7 +531,190 @@ Total:     ~5460
    - Stairs should have similar or slightly lower contact costs (controlled stepping)
    - If contact cost is very high, agent is landing too hard
 
-### Potential Issues to Watch:
+---
+
+## 4. HumanoidCircuit-v0
+
+**Location:** `envs/custom/humanoid_circuit.py`
+
+### Reward Components
+
+```python
+reward = (progress_reward + forward_reward + heading_reward + balance_reward + 
+          speed_regulation_reward + height_reward + waypoint_reward + 
+          circuit_completion_reward + healthy_reward - ctrl_cost - contact_cost)
+```
+
+**Key Feature:** Complex multi-objective reward combining navigation, locomotion, and obstacle climbing!
+
+### Breakdown
+
+#### 1. **Progress Reward** (waypoint approach)
+```python
+prev_dist_to_current = np.linalg.norm(current_waypoint - prev_xy_position)
+dist = np.linalg.norm(current_waypoint - xy_position)
+progress_reward = (prev_dist_to_current - dist) * progress_reward_weight
+```
+- **Default Weight:** 100.0
+- **Configurable:** YES ✓
+- **Type:** Delta reward (distance improvement to current waypoint)
+- **Purpose:** Reward getting closer to active waypoint
+
+#### 2. **Forward Reward** (directional velocity)
+```python
+if dist > 0.1:
+    direction_to_waypoint = (current_waypoint - xy_position) / dist
+    velocity_toward_waypoint = np.dot(xy_velocity, direction_to_waypoint)
+    forward_reward = forward_reward_weight * max(0, velocity_toward_waypoint)
+```
+- **Default Weight:** 1.0
+- **Configurable:** YES ✓
+- **Type:** Directional velocity reward
+- **Purpose:** Reward moving in direction of waypoint
+
+#### 3. **Heading Reward** (orientation alignment)
+```python
+if dist > 0.1 and speed > 0.1:  # Only when moving
+    yaw = arctan2(2*(qw*qz + qx*qy), 1 - 2*(qy^2 + qz^2))  # From quaternion
+    target_dir = arctan2(waypoint_y - y, waypoint_x - x)
+    heading_error = target_dir - yaw
+    heading_reward = heading_reward_weight * cos(heading_error) * min(speed, 2.0)
+```
+- **Default Weight:** 5.0
+- **Configurable:** YES ✓
+- **Type:** Alignment reward (scaled by speed)
+- **Range:** [-5, +5] (when moving at 1 m/s)
+- **Purpose:** Reward facing toward waypoint while moving
+
+#### 4. **Balance Reward** (upright torso)
+```python
+# Extract roll and pitch from quaternion
+roll = arctan2(2*(qw*qx + qy*qz), 1 - 2*(qx^2 + qy^2))
+pitch = arcsin(2*(qw*qy - qz*qx))
+tilt = sqrt(roll^2 + pitch^2)
+balance_reward = balance_reward_weight * cos(tilt)
+```
+- **Default Weight:** 0.0 (disabled by default)
+- **Configurable:** YES ✓
+- **Type:** Upright posture reward
+- **Purpose:** Encourage upright walking stance
+
+#### 5. **Speed Regulation Reward** (controlled pace)
+```python
+speed = np.linalg.norm(xy_velocity)
+speed_error = speed - optimal_speed
+speed_regulation_reward = speed_regulation_weight * exp(-0.5 * (speed_error / 0.5)^2)
+```
+- **Default Weight:** 0.0 (disabled by default)
+- **Default Optimal Speed:** 1.0 m/s
+- **Configurable:** YES ✓
+- **Type:** Gaussian reward centered at optimal speed
+- **Purpose:** Encourage controlled, moderate speed
+
+#### 6. **Height Reward** (climbing stairs)
+```python
+height_gained = z_position - prev_z_position
+height_reward = height_reward_weight * max(0, height_gained)
+```
+- **Default Weight:** 2.0
+- **Configurable:** YES ✓
+- **Type:** Delta reward (height gain per timestep)
+- **Purpose:** Reward climbing over stair obstacles
+
+#### 7. **Waypoint Reward** (milestone bonus)
+```python
+if dist < waypoint_reach_threshold:  # Default: 1.0m
+    waypoint_reward = waypoint_bonus
+    current_waypoint_index += 1
+    waypoints_reached += 1
+```
+- **Default Bonus:** 50.0
+- **Default Threshold:** 1.0m
+- **Configurable:** YES ✓
+- **Type:** Sparse milestone reward
+- **Purpose:** Large bonus for reaching each waypoint
+
+#### 8. **Circuit Completion Reward** (final bonus)
+```python
+circuit_complete = (waypoints_reached == len(waypoints))
+if circuit_complete and not circuit_bonus_awarded:
+    circuit_completion_reward = circuit_completion_bonus
+    circuit_bonus_awarded = True
+```
+- **Default Bonus:** 0.0 (disabled by default)
+- **Configurable:** YES ✓
+- **Type:** One-time episode completion bonus
+- **Purpose:** Massive reward for completing entire circuit
+
+#### 9. **Healthy Reward** (survival)
+```python
+healthy_reward = healthy_reward if is_healthy else 0.0
+```
+- **Default Weight:** 5.0
+- **Configurable:** YES ✓
+- **Can use relative z-check:** Checks height relative to terrain if enabled
+
+#### 10. **Control Cost** (efficiency)
+```python
+ctrl_cost = ctrl_cost_weight * np.sum(np.square(action))
+```
+- **Default Weight:** 0.1
+- **Configurable:** YES ✓
+
+#### 11. **Contact Cost** (smoothness)
+```python
+contact_cost = contact_cost_weight * np.sum(np.square(self.data.cfrc_ext))
+```
+- **Default Weight:** 5e-7
+- **Configurable:** YES ✓
+- **Purpose:** Smooth navigation and stair climbing
+
+### Typical Reward Magnitudes
+
+| Component | Typical Range | Notes |
+|-----------|--------------|-------|
+| Progress | -10 to +10 | Depends on movement toward waypoint |
+| Forward | 0 to +2 | Directional velocity component |
+| Heading | -5 to +5 | Alignment when moving |
+| Balance | 0 to 0 | Disabled by default |
+| Speed Reg | 0 to 0 | Disabled by default |
+| Height | 0 to +1 | When climbing stairs |
+| Waypoint | 0 or 50 | Sparse milestone |
+| Circuit | 0 or 0 | Disabled by default (configurable) |
+| Healthy | 5.0 | Constant when alive |
+| Ctrl Cost | -0.1 to -2 | Varies with actions |
+| Contact Cost | -0.001 to -0.01 | Small smoothness penalty |
+| **Total** | **~5 to ~70** | Spike when reaching waypoint |
+
+### Configuration Variants
+
+| Config | Waypoints | Stairs | Progress | Waypoint Bonus | Circuit Bonus | Notes |
+|--------|-----------|--------|----------|----------------|---------------|-------|
+| **flat** | 3 | None | 100.0 | 50.0 | 0.0 | Pure navigation |
+| **simple** | 4 | 2 sections | 100.0 | 50.0 | 0.0 | Basic obstacles |
+| **easy** | 3 | 1 gentle | 100.0 | 50.0 | 0.0 | Learning circuit |
+| **complex** | 6 | 3 varied | 100.0 | 50.0 | 0.0 | Expert challenge |
+| **custom** | 5 | Variable | 100.0 | 50.0 | 0.0 | Waypoint on stairs |
+
+---
+
+## Key Differences Summary
+
+### 1. Reward Philosophy
+
+| Environment | Primary Goal | Reward Type | Forward Type | Contact Cost |
+|-------------|--------------|-------------|--------------|-------------|
+| **Humanoid-v5** | Walk forward fast | Dense velocity + survival | Displacement/dt | ✅ Yes (5e-7) |
+| **Stairs (original)** | Climb stairs | Mixed (dense velocity + sparse milestones) | Velocity (vx) | ❌ No |
+| **Destination** | Reach target | Dense progress + sparse goal | Distance delta | ❌ No |
+| **Stairs (configurable)** | Climb stairs (flexible) | Same as original but tunable | Velocity (vx) | ✅ Yes (5e-7, configurable) |
+| **Circuit** | Navigate waypoints + climb | Multi-objective (navigation + locomotion) | Directional velocity | ✅ Yes (5e-7, configurable) |
+
+---
+
+## Potential Issues to Watch
+
+### General Issues:
 
 1. **Reward Hacking:**
    - Agent might learn to "bounce" to gain height reward repeatedly
@@ -560,3 +743,22 @@ Total:     ~5460
    - **Symptoms:** Very low velocity, agent barely moving
    - **Solution:** Decrease `contact_cost_weight` or increase `forward_reward_weight`
    - **Balance:** Contact cost should be ~0.1-1% of total reward magnitude
+
+### Circuit-Specific Issues:
+
+7. **Waypoint Exploitation:**
+   - Agent might circle around waypoint to farm progress reward
+   - **Symptoms:** High progress reward but not reaching waypoint
+   - **Solution:** Increase `waypoint_bonus` to make reaching more attractive than circling
+   
+8. **Heading vs Progress Conflict:**
+   - High heading_reward might make agent stop to turn instead of moving
+   - **Solution:** Only reward heading when moving (already implemented)
+   
+9. **Ignoring Waypoint Order:**
+   - Agent might try to skip waypoints or visit out of order
+   - **Note:** Already prevented by implementation (sequential only)
+   
+10. **Circuit Never Completes:**
+    - Agent reaches all waypoints but episode too short
+    - **Solution:** Adjust episode length or waypoint spacing
