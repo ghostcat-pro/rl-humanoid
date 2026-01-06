@@ -1,0 +1,9 @@
+# Humanoid walking environment optimized for SAC
+# SAC is off-policy and works well with a single environment
+name: Humanoid-v5
+make_kwargs:
+  render_mode: null
+vec_env:
+  n_envs: 1              # SAC typically uses 1 env (off-policy)
+  start_method: spawn
+  monitor: true
