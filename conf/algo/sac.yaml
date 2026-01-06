@@ -1,0 +1,23 @@
+policy: MlpPolicy
+
+device: cuda  # Use GPU
+
+# Network architecture for actor (pi) and critic (qf)
+policy_kwargs:
+  net_arch:
+    pi: [256, 256]
+    qf: [256, 256]
+
+hyperparams:
+  learning_rate: 3.0e-4
+  buffer_size: 1000000        # Replay buffer size
+  learning_starts: 10000      # Steps before learning begins
+  batch_size: 256             # Batch size for training
+  tau: 0.005                  # Soft target update coefficient
+  gamma: 0.99                 # Discount factor
+  ent_coef: auto              # Entropy coefficient (auto-tuning)
+  train_freq: 1               # Update policy every n steps
+  gradient_steps: 1           # Gradient steps per update
+  target_update_interval: 1   # Target network update interval
+  use_sde: false              # State Dependent Exploration
+  use_sde_at_warmup: false    # Use SDE during warmup
