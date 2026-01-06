@@ -18,6 +18,10 @@ env:
 algo:
   policy: MlpPolicy
   device: cuda
+  policy_kwargs:
+    net_arch:
+    - 256
+    - 256
   hyperparams:
     learning_rate: 0.00025
     n_steps: 1024

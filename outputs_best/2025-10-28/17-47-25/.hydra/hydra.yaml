@@ -147,7 +147,7 @@ hydra:
     - path: ''
       schema: structured
       provider: schema
-    output_dir: /home/fspinto/projects/rl-humanoid/outputs/2025-10-28/16-30-12
+    output_dir: /home/fspinto/projects/rl-humanoid/outputs/2025-10-28/17-47-25
     choices:
       training: default
       algo: ppo
