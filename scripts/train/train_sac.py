@@ -4,6 +4,8 @@ Train a SAC (Soft Actor-Critic) agent on Gymnasium MuJoCo environments.
 Usage:
     python scripts/train/train_sac.py env=humanoid algo=sac
     python scripts/train/train_sac.py env=humanoid_stairs algo=sac training=long
+    
+Outputs are saved to outputs_sac/ directory (separate from PPO outputs).
 """
 from __future__ import annotations
 import os
@@ -224,4 +226,7 @@ def main(cfg: DictConfig):
 
 
 if __name__ == "__main__":
+    # Override Hydra's default output directory to outputs_sac
+    sys.argv.append('hydra.run.dir=outputs_sac/${now:%Y-%m-%d}/${now:%H-%M-%S}')
+    
     main()
