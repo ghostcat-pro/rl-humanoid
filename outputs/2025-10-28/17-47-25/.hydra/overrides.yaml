@@ -1,0 +1,7 @@
+- env=humanoid
+- algo.device=cuda
+- training.total_timesteps=50000000
+- env.vec_env.n_envs=16
+- algo.hyperparams.n_steps=1024
+- algo.hyperparams.learning_rate=2.5e-4
+- algo.hyperparams.ent_coef=0.005
