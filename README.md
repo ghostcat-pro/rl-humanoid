@@ -2,11 +2,13 @@
 
 Reinforcement learning training for humanoid agents with **4 different locomotion tasks** of increasing complexity.
 
-**Primary Framework:** Stable-Baselines3 (SB3)  
-**Configuration:** Hydra  
+**Primary Framework:** Stable-Baselines3 (SB3) with PPO
+**Configuration:** Hydra
 **Environments:** Custom Gymnasium/MuJoCo environments
 
-> **Note:** TorchRL was used only for initial experiments. All main training and results use Stable-Baselines3.
+> **Note:** TorchRL and SAC were used only for initial experiments. All main training and results use Stable-Baselines3 with PPO. See [Extras](#-extras-sac--torchrl) for running these alternative approaches.
+
+
 
 ---
 
@@ -215,12 +217,14 @@ rl-humanoid/
 │   ├── train/                     # Training scripts
 │   │   ├── train_sb3.py          # Main SB3 trainer (Hydra config)
 │   │   ├── train_destination.py  # Destination navigation trainer
+│   │   ├── train_sac.py          # SAC trainer (experimental)
 │   │   └── train_torchrl.py      # TorchRL trainer (experimental)
 │   ├── evaluate/                  # Evaluation scripts
 │   │   ├── evaluate_sb3.py       # Main evaluation with rendering
 │   │   ├── evaluate_stats.py     # Statistical evaluation (headless)
 │   │   ├── evaluate_video.py     # Record MP4 videos
-│   │   ├── evaluate_torchrl.py   # TorchRL evaluation
+│   │   ├── evaluate_sac.py       # SAC evaluation (experimental)
+│   │   ├── evaluate_torchrl.py   # TorchRL evaluation (experimental)
 │   │   └── evaluate_all.py       # Batch evaluate all models
 │   └── utils/                     # Utility scripts
 │       ├── evaluate_circuit_flat.py    # Quick circuit evaluation
@@ -237,10 +241,12 @@ rl-humanoid/
 │   ├── main.yaml                  # Main config entry point
 │   ├── env/                       # Environment configs
 │   │   ├── humanoid.yaml
+│   │   ├── humanoid_sac.yaml     # SAC-specific config
 │   │   ├── humanoid_stairs_*.yaml
 │   │   └── humanoid_circuit_*.yaml
-│   ├── algo/                      # Algorithm configs (PPO)
-│   │   └── ppo.yaml
+│   ├── algo/                      # Algorithm configs
+│   │   ├── ppo.yaml              # PPO (main algorithm)
+│   │   └── sac.yaml              # SAC (experimental)
 │   └── training/                  # Training configs
 │       └── *.yaml
 ├── utils/                          # Python utilities
@@ -265,17 +271,19 @@ rl-humanoid/
 │       ├── stairs_health_check_fix.md
 │       ├── training_summary_dec12.md
 │       └── evaluation_results_humanoid_oct28.txt
+├── examples/                       # Example scripts
 ├── outputs/                        # SB3 training outputs (local)
 ├── outputs_best/                   # Best models (tracked in git)
 │   └── 2025-XX-XX/                # Best model checkpoints
 ├── outputs_destination/            # Destination training runs
-├── outputs_torchrl/                # TorchRL training outputs
+├── outputs_sac/                    # SAC training outputs (experimental)
+├── outputs_torchrl/                # TorchRL training outputs (experimental)
 ├── videos/                         # Generated videos
 │   ├── circuit_flat_80m/
 │   ├── stairs_easy_10m/
 │   └── *.mp4
+├── best_videos/                    # Best result videos (tracked in git)
 ├── how_to_use.txt                  # Best model commands reference
-├── train_solved.sh                 # Quick training script (bash)
 ├── INSPIRATION.md                  # Project inspiration
 ├── requirements.txt                # Python dependencies
 └── README.md                       # This file
@@ -454,13 +462,39 @@ python scripts/train/train_sb3.py \
   training=long
 ```
 
+---
+
+## 🧪 Extras: SAC & TorchRL
+
+These alternative approaches are experimental and provided for comparison purposes. The main results use SB3 with PPO.
+
+### SAC Training (Stable-Baselines3)
+
+```bash
+# Train Humanoid with SAC
+python scripts/train/train_sac.py env=humanoid_sac training.total_timesteps=5000000
+
+# Evaluate SAC model
+python scripts/evaluate/evaluate_sac.py \
+  --env_id Humanoid-v5 \
+  --model_path "outputs_sac/YYYY-MM-DD/HH-MM-SS/checkpoints/model_XXXXXX.zip" \
+  --render --deterministic --episodes 5
+```
+
 ### TorchRL Training
+
 ```bash
 python scripts/train/train_torchrl.py \
   --env_id Walker2d-v5 \
   --total_frames 1000000 \
   --n_envs 16 \
   --device cpu
+
+# Evaluate TorchRL model
+python scripts/evaluate/evaluate_torchrl.py \
+  --env_id Walker2d-v5 \
+  --model_path "outputs_torchrl/model.pt" \
+  --render --episodes 5
 ```
 
 ---
