@@ -10,7 +10,7 @@ multirun/
 .DS_Store
 
 # Exception: Allow critical files in outputs_best for reproducibility
-#!outputs_best/**/best_model.zip
-#!outputs_best/**/vecnormalize_final.pkl
-#!outputs_best/**/progress.csv
-#!outputs_best/**/evaluations.npz
+!outputs_best/**/best_model.zip
+!outputs_best/**/vecnormalize_final.pkl
+!outputs_best/**/progress.csv
+!outputs_best/**/evaluations.npz
