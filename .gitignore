@@ -2,6 +2,7 @@
 *.pyc
 .venv/
 outputs/
+outputs_camera_ready/
 outputs_torchrl/
 multirun/
 */checkpoints/
