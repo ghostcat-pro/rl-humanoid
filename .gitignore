@@ -8,6 +8,7 @@ multirun/
 */checkpoints/
 *.zip
 *.pkl
+reports/**/training_campaign.log
 .DS_Store
 
 # Exception: Allow critical files in outputs_best for reproducibility
