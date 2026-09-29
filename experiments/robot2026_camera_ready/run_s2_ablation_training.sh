@@ -20,12 +20,34 @@ run_training() {
   local arm="$1"
   local seed="$2"
   shift 2
+  local run_dir="outputs_camera_ready/${arm}/seed_${seed}"
+  local latest_checkpoint=""
 
-  "${PYTHON_BIN}" scripts/train/train_sb3.py \
-    "${COMMON_S2[@]}" \
-    seed="${seed}" \
-    hydra.run.dir="outputs_camera_ready/${arm}/seed_${seed}" \
-    "$@"
+  if [[ -f "${run_dir}/final_model.zip" ]]; then
+    echo "[SKIP] ${arm} seed ${seed}: final_model.zip already exists."
+    return 0
+  fi
+
+  if [[ -d "${run_dir}/checkpoints" ]]; then
+    latest_checkpoint="$(find "${run_dir}/checkpoints" -maxdepth 1 -type f -name 'model_*.zip' | sort -V | tail -n 1)"
+  fi
+
+  if [[ -n "${latest_checkpoint}" ]]; then
+    echo "[RESUME] ${arm} seed ${seed}: ${latest_checkpoint}"
+    "${PYTHON_BIN}" scripts/train/train_sb3.py \
+      "${COMMON_S2[@]}" \
+      seed="${seed}" \
+      resume_from="${latest_checkpoint}" \
+      hydra.run.dir="${run_dir}" \
+      "$@"
+  else
+    echo "[START] ${arm} seed ${seed}"
+    "${PYTHON_BIN}" scripts/train/train_sb3.py \
+      "${COMMON_S2[@]}" \
+      seed="${seed}" \
+      hydra.run.dir="${run_dir}" \
+      "$@"
+  fi
 }
 
 # A: S2 base. Seed 42 is the published run in outputs_best/2025-12-06/17-36-50.
