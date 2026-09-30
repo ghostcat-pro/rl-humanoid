@@ -81,6 +81,14 @@ Final report and CSV outputs:
 - `reports/robot2026_camera_ready/s2_ablation/seed_summary.csv`
 - `reports/robot2026_camera_ready/s2_ablation/per_episode.csv`
 
+Success-based checkpoint diagnostic:
+
+- `reports/robot2026_camera_ready/s2_success_checkpoint_diagnostic/after_action_report.md`
+- `reports/robot2026_camera_ready/s2_success_checkpoint_diagnostic/arm_summary.csv`
+- `reports/robot2026_camera_ready/s2_success_checkpoint_diagnostic/final_success_selected_summary.csv`
+- `reports/robot2026_camera_ready/s2_success_checkpoint_diagnostic/selected_checkpoints.csv`
+- `reports/robot2026_camera_ready/s2_success_checkpoint_diagnostic/checkpoint_scan_summary.csv`
+
 Raw trained models and logs:
 
 - `outputs_camera_ready/s2_base/seed_43`
@@ -151,6 +159,40 @@ The new results substantially change the paper story.
    transparent. It should no longer frame S2 as clear causal evidence that
    reward shaping and terrain-relative termination enabled stair learning.
 
+## Checkpoint-Selection Diagnostic
+
+The suggested diagnostic next step was executed after the first ablation report.
+It asked whether success-based checkpoint selection changes the conclusion.
+
+Protocol:
+
+- Coarse scan: every 1M checkpoint, 10 deterministic episodes.
+- Refinement: checkpoints within +/-1M of the coarse winner, 20 deterministic
+  episodes.
+- Final evaluation: selected success-best checkpoint, 100 deterministic
+  episodes.
+- Evaluation seed: `123`.
+- Checkpoints scanned: 561 candidate evaluations across all runs.
+
+Mean success rate comparison:
+
+| Arm | Reward-selected | Success-selected diagnostic |
+|---|---:|---:|
+| `s2_base` | 28.8% | 42.8% |
+| `s2_world_frame_termination` | 35.0% | 51.2% |
+| `s2_no_shaping` | 81.2% | 86.6% |
+
+Interpretation:
+
+- Reward-based checkpoint selection was a real confound.
+- Success-selected checkpoints improve `s2_base` and
+  `s2_world_frame_termination`, so some useful stair-completion policies existed
+  but were not selected by reward.
+- The confound does not fully explain the result. `s2_no_shaping` remains the
+  strongest and most stable arm after success-based selection.
+- The paper should report checkpoint-selection mismatch as a methodological
+  lesson, not as a reason to restore the original strong reward-shaping claim.
+
 ## Recommended Paper Changes
 
 1. Replace single-seed S2 claims with the five-seed S2 ablation table.
@@ -187,24 +229,21 @@ The new results substantially change the paper story.
 
 ## Suggested Next Steps
 
-1. Before editing the full paper, run one diagnostic analysis:
-   re-select S2 checkpoints by success rate rather than reward, if historical
-   checkpoint evaluations or stored checkpoints make that feasible.
+1. Use the success-based checkpoint diagnostic as additional evidence that
+   checkpoint selection was a confound. Do not replace the reward-selected
+   report; present the two protocols clearly.
 
-2. If success-based checkpoint selection changes the result, the paper can
-   report that reward-based checkpointing was a confound and explain both sets
-   of numbers.
+2. Revise the manuscript around the current five-seed findings. Avoid more
+   training unless a reviewer-response decision specifically requires it.
 
-3. If success-based checkpoint selection does not change the result, revise the
-   manuscript around the current five-seed findings and do not run more
-   experiments unless absolutely necessary.
-
-4. Update the manuscript tables and discussion using:
+3. Update the manuscript tables and discussion using:
    - `arm_summary.csv`
    - `seed_summary.csv`
    - `after_action_report.md`
+   from the reward-selected report, plus the success-selected diagnostic report
+   if space allows.
 
-5. Add the camera-ready evidence as additional experiments, not as replacement
+4. Add the camera-ready evidence as additional experiments, not as replacement
    for the original submitted artifacts. The original artifacts remain
    preserved on `1st_results_paper`.
 
